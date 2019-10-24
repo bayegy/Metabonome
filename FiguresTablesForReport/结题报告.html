@@ -1,0 +1,753 @@
+<!-- HTML to generate the amplicom sequencing reports -->
+
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>代谢组_微生太_结题报告</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<link rel="stylesheet" href="FiguresTablesForReport/src/lib-js/bootstrap.min.css">
+		<script src="FiguresTablesForReport/src/lib-js/jquery-3.4.1.min.js"></script>
+		<script src="FiguresTablesForReport/src/lib-js/popper.min.js"></script>
+		<script src="FiguresTablesForReport/src/lib-js/bootstrap.min.js"></script>
+
+
+		<style media=print>
+			.noprint{
+				display: none;
+			}
+
+			#section{
+				margin-left: 20px;
+				width: 1200px;
+			}
+
+		</style>
+
+		<style type="text/css">
+			.container{
+				max-width: 100%;
+				overflow-x: hidden;
+				font-family: "Microsoft YaHei";
+				padding-left: 285px;
+				padding-right: 20px;
+				background-color: #f2f2f2;
+
+			}
+		</style>
+	</head>
+
+
+
+
+	<body class="container">
+
+		<style type="text/css">
+
+
+			.header{
+				display:block;
+				width:100%;
+				height:76px;
+				left: 0px;
+				top: 0px;
+				overflow: hidden;
+				background:#eee;
+				position:fixed;
+				Z-index:100;
+				}
+			.cutline{
+				display:block;
+				width:200%;
+				height:5px;
+				margin-left: -200px;
+				margin-top: 76px;
+				background:#336699;
+				position:fixed;
+				}
+
+			.title{
+				width:100%;
+				height:76px;
+				background:url(FiguresTablesForReport/src/image/header.jpg) no-repeat top left;
+				background-size:1350px 77px;
+				position:fixed;
+				margin-left: 0px;
+				clip: rect(0px,1336px,77px,0px);
+				
+				}
+
+			.head_right{
+				font-size:27px;
+				color:#181818;
+				float:right;
+				margin:22px 25px 0px 25px;
+				_display:inline;
+				font-family:"黑体";
+			    font-weight:bold;
+				}
+
+			#nav{
+			    max-height: 600px;
+				width: 200px;
+			    position: fixed;
+			    font-size: 13px;
+			    top: 150px;
+			    line-height: 40px;
+			    left: 10px;
+			    box-shadow: rgb(0, 0, 0) 0px 20px 50px 0px;
+			    background-color: #336699;
+
+
+			}
+
+
+			a, a:visited {
+			    color: #3299CC;
+			    text-decoration: none;
+			}
+
+			a:hover {
+			    color: #EA9D2F;
+			    text-decoration: none;
+			}
+
+
+			.buta, .buta:visited, .buta:hover {
+			    color: #fff;
+			    text-decoration: none;
+			    padding-right: 25px;
+			    width: 200px;
+			    display: block;
+
+			}
+
+			.btn-info {
+			    width: 200px;
+			}
+
+			#section {
+			    padding: 100px 35px 500px 35px;
+			    border-left-style: outset;
+			    border-right-style: inset;
+			    background-color: white;
+			    
+			}
+
+			.tog {
+				position:fixed;
+				left:10px;
+				top: 100px;
+			}
+
+			img {
+				max-width: 1000px;
+				height:auto;
+			}
+			th, td {text-align:center; font-size: 80%}
+			/*tr:hover {background:#cc0;}*/
+			p{
+			    line-height: 28px;
+			}
+
+			h2,h3,h4,h6 {
+				font-weight: bold;
+				line-height: 1.5em;
+			}
+
+			.anchor {
+				padding-top: 80px;
+				margin-top: -80px;
+			}
+
+			hr {
+				margin-top: 80px;
+			}
+			.image-block {
+				text-align: center;
+			}
+
+			.image-description{
+				padding: 15px 200px;
+				font-size: 80%;
+				line-height: 22px;
+				font-style: oblique;
+				
+			}
+
+
+
+		</style>
+
+
+
+		<div class="header noprint">
+			<div class="title noprint"></div>
+			<div class="head_right noprint"><font color="#336699">代谢组数据分析结题报告</font></div>
+			<div class="cutline noprint"></div>
+		</div>
+
+
+		<div class="noprint tog" id="show">
+			<button class="btn btn-primary dropdown-toggle" id="show-btn"></button>
+		</div>
+		<div class="noprint tog" id="hide">
+			<button class="btn btn-primary" id="hide-btn" style="width: 200px;">隐藏目录</button>
+		</div>			
+
+
+		<script>
+			$("#show-btn").click(function(){
+				$("#nav").show();
+				$("#show").hide();
+				$("#hide").show();
+				$(".container").css({
+					padding: "0px 20px 0px 285px"
+				});
+			})
+
+			$("#hide-btn").click(function(){
+				$("#nav").hide();
+				$("#show").show();
+				$("#hide").hide();
+				$(".container").css({
+					padding: "0px 20px 0px 60px"
+				});
+			})
+		</script>
+
+
+		<div class="noprint" id="nav">
+
+			<button type="button" class="btn btn-info"><a class="buta" href="#a1">一 概述</a></button>
+						
+			<div class="btn-group">
+				<button type="button" class="btn btn-info"><a class="buta" href="#a2">二 项目流程</a></button>
+			    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+  					<span class="caret"></span>
+				</button>
+				<div class="dropdown-menu">
+					<a class="dropdown-item" href="#a2.1">2.1 实验流程</a>
+					<a class="dropdown-item" href="#a2.2">2.2 数据分析流程</a>
+				</div>
+		 	</div>
+			 
+			<div class="btn-group">
+				<button type="button" class="btn btn-info"><a class="buta" href="#a3">三 数据预处理</a></button>
+			    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+  					<span class="caret"></span>
+				</button>
+				
+				<div class="dropdown-menu">
+					<a class="dropdown-item" href="#a3.1">3.1 质量控制（QC）</a>
+					<a class="dropdown-item" href="#a3.2">3.2 标准化（Normalization）</a>
+				</div>
+
+			</div>
+
+
+			 <div class="btn-group">
+
+				<button type="button" class="btn btn-info"><a class="buta" href="#a4">四 代谢物含量统计</a></button>
+			    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+  					<span class="caret"></span>
+				</button>
+
+				<div class="dropdown-menu">
+					<a class="dropdown-item" href="#a4.1">4.1 百分比含量柱形图</a>
+					<a class="dropdown-item" href="#a4.2">4.2 热图聚类图</a>
+				</div>
+			</div>
+
+
+			
+			<button type="button" class="btn btn-info"><a class="buta" href="#a5">五 无监督的PCA分析</a></button>
+			
+			
+			
+			<div class="btn-group">
+				<button type="button" class="btn btn-info"><a class="buta" href="#a6">六 最小二乘判别分析</a></button>
+			    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+  					<span class="caret"></span>
+				</button>
+
+				<div class="dropdown-menu">
+					<a class="dropdown-item" href="#a6.1">6.1 偏最小二乘判别分析</a>
+					<a class="dropdown-item" href="#a6.2">6.2 正交偏最小二乘判别分析</a>
+				</div>
+			</div>
+			
+
+			<button type="button" class="btn btn-info"><a class="buta" href="#a7">七 倍数变化火山图</a></button>
+		
+
+
+			<div class="btn-group">
+				<button type="button" class="btn btn-info"><a class="buta" href="#a8">八 机器学习分析</a></button>
+			    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+  					<span class="caret"></span>
+				</button>
+				<div class="dropdown-menu">
+					<a class="dropdown-item" href="#a8.1">8.1 随机森林</a>
+					<a class="dropdown-item" href="#a8.2">8.2 支持向量机</a>
+				</div>
+			</div>
+
+			<div class="btn-group">
+				<button type="button" class="btn btn-info"><a class="buta" href="#a9">九 通路分析</a></button>
+			    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+  					<span class="caret"></span>
+				</button>
+				<div class="dropdown-menu">
+					<a class="dropdown-item" href="#a9.1">9.1 富集分析</a>
+					<a class="dropdown-item" href="#a9.2">9.2 拓扑分析</a>
+					<a class="dropdown-item" href="#a9.3">9.3 代谢通路图</a>
+				</div>
+			</div>
+			<button type="button" class="btn btn-info"><a class="buta" href="#a10">十 相关分析</a></button>
+			<button type="button" class="btn btn-info"><a class="buta" href="#a11">十一 参考文献</a></button>
+			<button type="button" class="btn btn-info"><a class="buta" href="#a12">十二 交付结果目录结构</a></button>
+			<button type="button" class="btn btn-info"><a class="buta" href="#a13">十三 联系我们</a></button>
+			
+			
+			
+			
+			
+
+		</div>
+
+		<div id="section">
+			<h1 class="noprint" style="font-size:100%; color:red"; align="center">温馨提示：请使用火狐或者Chrome的网页浏览器来查看报告</h1>
+			<h1 align="center">
+				<strong>微生太代谢组数据分析结题报告</strong>
+			</h1>
+
+			<!-- blockquote style="line-height:28px" -->
+			<hr>
+			<div id="a1" class="anchor"></div>
+			<h2>
+				<strong>一 概述 </strong>
+			</h2>
+			<p >
+				代谢物亦称中间代谢物，是指通过代谢过程产生或消耗的物质，生物大分子不包括在内。代谢组是指生物体内源性代谢物质的动态整体（代谢物的集合）。而传统的代谢概念既包括生物合成，也包括生物分解，因此理论上代谢物应包括核酸、蛋白质、脂类生物大分子以及其他小分子代谢物质。代谢组目前只涉及相对分子质量约小于1000的小分子代谢物质。代谢组学是对某一生物或细胞在一特定生理时期内所有低分子量代谢产物同时进行定性和定量分析的一门新学科。以组群指标分析为基础，以高通量检测和数据处理为手段，以信息建模与系统整合为目标的系统生物学的一个分支。代谢组研究有非靶向和靶向两种，非靶向代谢组学无偏向地检测样本中所有能检测到的代谢物分子，通过生信方法进行差异分析和通路分析，寻找生物标志物。靶向代谢则是针对特定的代谢物进行检测。
+			</p>
+			<p >
+				对代谢组进行研究，能够考察生物体系在特定时期受到刺激或扰动前后所有小分子代谢物的组成及其含量变化，从而表征生物体系的整体代谢特征。如：糖、有机酸、脂质、维生素、氨基酸、芳香烃等。也可以 研究代谢物表达量的变化，代谢物与生理病理变化的关系，寻找生物标志物，发现代谢途径。
+			</p>
+
+			<hr>
+			<div id="a2" class="anchor"></div>
+			<h2>
+				<strong>二 项目流程 </strong>
+			</h2>
+
+			<div id="a2.1" class="anchor"></div>
+			<h3>
+				2.1 实验流程
+			</h3>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/src/image/2-1.png">
+				<h6>图2-1 代谢组实验流程</h6>
+				<p class="image-description"></p>
+			</div>
+
+
+			<div id="a2.2" class="anchor"></div>
+			<h3>
+				2.2 数据分析流程
+			</h3>
+
+			<p>本代谢组分析流程基于R语言MetaboAnalystR包<sup>[1]</sup>。如图2-2，代谢组的数据分析流程如下：</p>
+			<ol>
+				<li>样本数据的QC质量控制以及批次校正</li>
+				<li>样本数据的标准化</li>
+				<li>代谢物含量统计（柱形图，热图）</li>
+				<li>无监督的降维分析（PCA）</li>
+				<li>特征代谢物（biomarker）的筛选（PLSDA，OPLSDA，倍数变化火山图，机器学习）</li>
+				<li>特征代谢物的通路分析（富集分析，拓扑分析，通路图）</li>
+				<li>相关分析</li>
+			</ol>
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/src/image/2-2.png">
+				<h6>图2-2 代谢组数据分析流程</h6>
+				<p class="image-description"></p>
+			</div>
+
+
+			<hr>
+			<div id="a3" class="anchor"></div>
+			<h2>
+				三 数据预处理 (<a href="00-DataProcess">00-DataProcess目录</a>)
+			</h2>
+			<div id="a3.1" class="anchor"></div>
+			<h3>3.1 质量控制（QC）（<a href="00-DataProcess/01-QC">00-DataProcess/01-QC</a>）</h3>
+			<p>质量控制是生物分析的基本概念之一，用在保证组学测定的数据的重复性和精确性。由于色谱系统与质谱直接与样品接触， 随着分析样品的增多，色谱柱和质谱会逐步的污染，导致信号的漂移，造成测量的系统误差。通过重复使用同一个质控样本(QC样本)来跟踪整个数据采集过程的行为， 已经被大多数的分析化学领域专家推荐和使用。质控样本被用于评估整个质谱数据在采集过程中的信号漂移， 这些漂移进一步能够被精确的算法所识别，校正，提高数据的质量。本流程采用R语言statTarget包的QC-RFSC算法对各个样本的特征（每个代谢物）信号峰进行校正，并记录了每个代谢物的校正效果。QC样本是所有样本取等量混合后的样本，在信号数据采集过程中，在开头，结尾，以及中间部分位点插入QC样本，记录信号漂移情况。所有QC样本都是一样的，如果没有信号漂移，在数据采集过程中，QC样本的信号强度应该是保持不变的。如图3-1所示，如果校正后QC样本点被控制在±%SD（标准差）×30%CV（变异系数，也称为RSD）范围内，即可认为该代谢物的信号校正效果良好。</p>
+
+			<div>
+				
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图3-1.png">
+				<h6>图3-1 校正前后代谢物信号峰强度随进样顺序的变化图</h6>
+				<p class="image-description">图中每个点对应一个样本，横坐标为信号采集时的进样顺序，纵坐标为对应样本的该代谢物的信号峰强度，蓝色样本点为质控样本点（QC样本）。</p>
+			</div>
+
+
+			<p>
+				此外我们也评估了所有代谢物的总体校正效果，如图3-2右边图所示，如果所有点都在线的下方，表示所有的代谢物的RSD（相对标准差，也叫变异系数，图3-2中左边图的变异系数是用QC样本计算的）在校正后都下降了，因此校正效果显著。需要注意的是，左边的图是用实验样本算的RSD，在校正过程后，可能增加，也可能减少，但并不是减少的越多越好。
+			</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图3-2.png">
+				<h6>图3-2 QC样本校正前后各个代谢物（信号峰）的变异系数</h6>
+				<p class="image-description">图中每个点对应一个代谢物，横坐标为校正前的变异系数，纵坐标为校正后的变异系数，如果一个点刚好落在图中虚线上，说明校正前和校正后这个代谢物的变异系数没有发生变化，如果一个点落在虚线下方，说明这个代谢物校正后的变异系数小于校正前的变异系数。</p>
+			</div>
+
+
+			<div id="a3.2" class="anchor"></div>
+			<h3>3.1 标准化（Normalization）（<a href="00-DataProcess/02-Normlization">00-DataProcess/02-Normlization</a>）</h3>
+			<p>
+				代谢物标准化的目的是使得所有代谢物的均值和标准差（或者说中位数，四分位点，scale）在同一个水平上。PCA，PLSDA，OPLSDA以及机器学习这样的分析，如果不进行代谢物的标准化，那么均值和标准差高的代谢物的重要性将会倾向于高于均值标准低的代谢物的重要性，而这样的结果显然不是我们想要的结果，在分组间差异大的才应该是重要性高的。如图3-3所示，在标准化前，代谢物含量的中位数和上下四分位点参差不齐，差异较大，但标准化后，基本都在同一个水平上了。此外，T检验以及ANOVA这样的差异比较方法，都要求代谢物含量服从正态分布，因此，我们一般用log转化，使得代谢物含量分布接近正态分布。
+			</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图3-3.png">
+				<h6>图3-3 标准化前后各个代谢物的含量分布</h6>
+				<p class="image-description">含量分布用箱线图表示，箱线图从左到右分别对应离群点，最小值，下四分位点，中位数，上四分位点，最大值，离群点。左边图为标准化前的分布，右边图为标准化后的分布。</p>
+			</div>
+
+
+
+
+
+			<hr>
+			<div id="a4" class="anchor"></div>
+
+			<h2>
+				四 代谢物含量统计(<a href="01-ConcentrationSummary">01-ConcentrationSummary目录</a>)
+			</h2>
+
+
+			<div id="a4.1" class="anchor"></div>
+			<h3>4.1 百分比含量柱形图(<a href="01-ConcentrationSummary/1-Barplot">01-ConcentrationSummary/1-Barplot</a>)</h3>
+			<p>
+				计算每个样本内各个代谢物的含量百分比，然后用堆积柱形图可视化，能直观的比较分组之间的代谢物组成结构差异。图4-1展示了含量排在前20的代谢物，其余的代谢物被包括进Others中。
+			</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图4-1.png">
+				<h6>图4-1 含量前20的代谢物百分比堆积柱形图</h6>
+				<p class="image-description">横坐标是样品名，根据分组顺序排序，同时用不同颜色标注了不同的分组样本。纵坐标表示各个代谢物的百分比含量，从上而下对应代谢物的柱的顺序与图例一致。</p>
+			</div>
+
+
+
+			<p>在所有代谢物中，有的代谢物是在生物体内扮演着特定角色的，比如激素，维生素等。我们将所有代谢物用<a href="https://www.genome.jp/kegg-bin/get_htext?br08001">KEGG数据库br08001</a>进行注释，得到代谢物所扮演的生物学角色，然后统计每个生物学角色的百分比含量，绘制百分比含量堆积柱形图，如图4-2所示。</p>
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图4-2.png">
+				<h6>图4-2 扮演生物学角色的代谢物百分比堆积柱形图</h6>
+				<p class="image-description">横坐标是样品名，根据分组顺序排序，同时用不同颜色标注了不同的分组样本。纵坐标表示各个生物学角色的百分比含量。</p>
+			</div>			
+
+			<p>结果文件夹中也提供了分组均值的百分比含量堆积柱形图，请老师自行查看结果文件夹。</p>
+
+			<div id="a4.2" class="anchor"></div>
+			<h3>4.2 热图聚类图(<a href="01-ConcentrationSummary/2-Heatmap">01-ConcentrationSummary/2-Heatmap</a>)</h3>
+
+			<p>为了研究不同样品间的相似性，还可以通过对样品进行聚类分析从而构建样品的聚类。选取关注的代谢物（默认选取代谢物含量排名前30），根据样品的代谢物组成，实现样品聚类，以此考察不同样品或者分组间的相似或差异性;也根据代谢物含量在各样本的分布进行聚类，寻找代谢物或样本的聚集规律。如图4-3，如果不同分组的样本聚类到不同位置，说明分组间的这30种代谢物组成结构差异较大。</p>
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图4-3.png">
+				<h6>图4-3 代谢物热图聚类结果</h6>
+				<p class="image-description">纵轴为样品名称信息，同时也包括了分组信息。横轴为代谢物。图中上方的聚类树为代谢物在各样本中分布的相似度聚类，左侧的聚类树为样品聚类树，中间的热图是代谢物含量热图，颜色与代谢物含量（log10(信号强度)）的关系见图右上方的刻度尺。</p>
+			</div>
+
+			<p>结果文件夹中也有不聚类根据样品分组顺序排序的热图，请老师自行查看结果文件夹。</p>
+
+			<hr>
+			<div id="a5" class="anchor"></div>
+			<h2 align="left">
+				五 无监督的PCA分析(<a href="02-PCA">02-PCA目录</a>)
+			</h2>
+
+
+			<p>
+				PCA分析是无监督的，也就是说PCA分析并不考虑样品的分组信息。PCA旨在挑选一些相互独立的能代表所有代谢物的因子（可以理解为所有代谢物的加权和），这些因子要能最大程度地保留原代谢物的变异信息（方差），挑选保留信息最多的两个因子，画散点图，能看出各个样本间的代谢物组成结构差异。如图5-1，如果图中两个分组的点云（point cloud）明显分布在不同区域，说明两个分组的代谢物组成结构差异较大。
+			</p>
+
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图5-1.png">
+				<h6>图5-1 PCA图</h6>
+				<p class="image-description">PCA图中，每个点对应一个样本，两个点之间的距离近似与两个样本的代谢物组成结构差异（欧式距离）。不同的分组用不同的颜色标出，椭圆标示的区域是样本点95%置信区域。</p>
+			</div>
+
+
+
+			<hr>
+			<div id="a6" class="anchor"></div>
+			<h2>
+				六 有监督的最小二乘判别分析
+			</h2>
+
+			<div id="a6.1" class="anchor"></div>			
+			<h3>6.1 偏最小二乘判别分析（<a href="03-PLSDA">03-PLSDA目录</a>）</h3>
+			<p >	
+				偏最小二乘判别分析是有监督的，即分析时需要提供分组信息，PLS-DA寻找能够寻找最大程度区分样品分组的因子（因子可以理解为所有代谢物的加权和）。判别分析将要预测的不连续分类变量编码为一个潜变量，潜变量是连续的，这样就可以在解释变量和潜变量之间建立回归，用最小二乘回归的理论来求解。偏最小二乘判别分析是线性判别分析的升级版，适用于解释变量存在大量共线性问题的组学数据。PLS-DA通过投影分别将预测变量和观测变量投影到一个新空间(新空间各个维度间是相互独立，没有共线性问题的)，来寻找一个线性回归模型。如图6-1，我们用区分效果最好的两个因子来画散点图，如果不同分组的样本的点云分布在不同区域，说明PLS-DA模型的判别效果较好，分组间应该存在有显著差异的代谢物。
+			</p>
+
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图6-1.png">
+				<h6>图6-1 PLS-DA点云图</h6>
+				<p class="image-description">图中，每个点对应一个样本，横纵坐标是判别效果最好的两个因子的值。不同的分组用不同的颜色标出，椭圆标示的区域是样本点95%置信区域。</p>
+			</div>
+
+
+			<p>有时只看图6-1来判断PLS-DA模型的区分效果（预测能力），不具有说服力。这时候我们可以运用置换检验（Permutation Test）的方法，先构造置换检验统计量（Q2，这个统计量通常能衡量模型的预测能力），用置换的方法来求检验统计量的分布（这个分布是随机分布，由随机因素形成的），把样本实际观测到的检验统计量与检验统计量分布进行比较，判断我们的PLS-DA判别模型的判别效果是否是完全随机因素导致的。如图6-2，如果观测检验统计量在随机分布之外，p值小于0.05，说明我们的PLS-DA判别模型显著，判别效果显著，可以显著区分不同的分组，也即分组间应存在显著差异的代谢物。</p>
+
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图6-2.png">
+				<h6>图6-2 PLS-DA置换检验的检验统计量分布以及p值</h6>
+				<p class="image-description">横坐标表示置换检验检验统计量的分布区间，纵坐标是置换过程中该区间的检验统计量的出现频次，箭头所指位置是实际观测到的检验统计量值，如果这个值离随机分布较远，说明模型区分效果不是随机的，模型区分效果显著。</p>
+			</div>
+
+
+
+			<p>同时也能够寻找在判别分析过程中作用（重要性，VIP， Value Importance in Projection）最大的代谢物，这些代谢物可以作为区分不同分组的biomaker。一般来说，VIP大于1的代谢物对判别分析的贡献是较大的，这些代谢物在分组间有较大差异。如图6-3，黄色区域中标出代谢物名称的代谢物，是校正后p值小于0.05，VIP大于1的代谢物，这些代谢物在分组间有显著差异，在PLSDA中起到重要作用，应该重点关注。</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图6-3.png">
+				<h6>图6-3 PLS-DA代谢物重要性图</h6>
+				<p class="image-description">图中，每个点代表一个代谢物，横坐标是VIP（Value Importance in Projection），纵坐标是FDR校正后的p值（log10转化）。</p>
+			</div>
+
+
+
+			<div id="a6.2" class="anchor"></div>
+			<h3>6.2 正交偏最小二乘判别分析（<a href="04-OPLSDA">04-OPLSDA目录</a>）</h3>
+			<p>
+				PLSDA利用代谢组数据所有成分进行预测，往往会造成较为严重的过度拟合（模型在训练样本群体中表现很好，但是在验证样本群体中却表现一般）。正交偏最小二乘判别分析是PLSDA的改进。在正交偏最小二乘判别分析中，回归模型是建立在包含分组信息的解释变量（代谢组数据）和响应变量（分组信息）之间的，模型会将与分组无关的信息过滤掉。与PLSDA相比，OPLSDA的优势在于只利用代谢组数据的一个成分（因子，componet）去预测分组，而其他成分都用来描述与这个成分（预测成分）正交的（无关的）变异<sup>[2]</sup>。在OPLSDA中，我们通常用R2Y和Q2来衡量模型的区分效果，两个值通常比较接近，Q2=1-模型误差方差/模型总方差，R2Y=模型能解释分组差异的方差/模型总方差，R2Y和Q2越接近1，说明模型的区分效果越好。结果文件夹中表格”oplsda_model_fitness_summary.csv“还提供了R2X，R2X=模型能解释代谢组数据变异的方差/模型总方差，R2X不常用。
+			</p>
+
+			<p>OPLSDA点云图和OPLSDA代谢物重要性图与PLS-DA相似，请参照<a href="#a6.1">PLS-DA部分</a>进行解读</p>
+
+			<p>在OPLSDA的置换检验中，我们分别用R2Y和Q2作为检验统计量，用置换的方法求得R2Y和Q2的随机分布，如图6-4，红色的频数分布图是Q2的分布，蓝色的频数分布图是R2Y的分布。如果箭头所指的实际观测Q2和R2Y在随机分布之外，说明Q2和R2Y不是随机的，是显著的，模型的预测能力显著，也即分组间应该存在显著差异的代谢物。</p>
+
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图6-4.png">
+				<h6>图6-4 PLS-DA置换检验的检验统计量分布以及p值</h6>
+				<p class="image-description">红色的频数分布图是Q2的置换随机分布，蓝色的频数分布图是R2Y的置换随机分布，箭头所指的是实际观测的模型Q2和R2Y。</p>
+			</div>
+
+
+
+			<hr>
+			<div id="a7" class="anchor"></div>
+			<h2>
+				七 倍数变化火山图（<a href="05-FoldChange">05-FoldChange目录</a>）
+			</h2>
+
+			<p>某些情况下，我们不仅想知道代谢物在分组间是否发生了变化（差异是否显著），同时也想知道这个变化有多大，以此来评估代谢物变化会给生物体造成多大的影响。我们可以通过计算代谢物变化的倍数（Fold Change, FC）来衡量这个变化的大小，结合p值，来筛选一些重点关注的代谢物。默认情况下，我们会将分组名按字母数字顺序排在前面的分组作为参照，计算另一个分组的均值和参照组的均值的变化倍数，上调变化倍数为正，下调倍数为负。如图7-1，黄色区域的代谢物是p小于0.05，同时变化倍数绝对值大于2的代谢物，这些代谢物在分组间差异显著，且变化较大，应该重点关注。</p>			
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图7-1.png">
+				<h6>图7-1 倍数变化火山图</h6>
+				<p class="image-description">每个点代表一个代谢物，横坐标为变化倍数，纵坐标为T检验p值，变化倍数越大，p值越小（log10(p)越高），点越大。</p>
+			</div>
+
+
+
+			<hr>
+			<div id="a8" class="anchor"></div>
+			<h2>
+				八 机器学习
+			</h2>
+
+			<p>机器学习也属于判别分析，它是判别分析的延伸。机器学习是一门多领域交叉学科，涉及概率论、统计学、逼近论、凸分析、算法复杂度理论等多门学科。常见的机器学习方法有支持向量机，随机森林，神经网络等。</p>			
+
+
+
+			<div id="a8.1" class="anchor"></div>
+			<h3>8.1 随机森林（<a href="06-RandomForest">06-RandomForest目录</a>）</h3>
+			<p>随机森林算法是套袋法（bagging）和决策树的结合，大致过程如下：</p>
+			<ul>
+				<li>从原始样本集中使用Bootstraping方法随机抽取n个训练样本，共进行k轮抽取，得到k个训练集（k个训练集之间相互独立，元素可以有重复）；</li>
+				<li>对于k个训练集，我们训练k个决策树；</li>
+				<li>在验证集中，每个样本的分类由k个决策树投票决定（每个决策树的权重一样）。</li>
+			</ul>
+
+			<p>使用的决策树的数量太多，会增加模型的复杂度，可能导致过度拟合的问题。如图8-1展示了随着使用决策树数量的增加，随机森林模型预测错误率逐渐降低直至平稳的过程，平稳时的决策树的数量是最终使用的决策树的数量。</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图8-1.png">
+				<h6>图8-1 随机森林预测错误率随着使用决策树数量增加的变化</h6>
+				<p class="image-description">横坐标为决策树的数量，纵坐标为随机森林预测的错误率。</p>
+			</div>
+
+
+			<p>结果文件夹中，图“RF_outliersdpi300.pdf”中标出了在随机森林分析中，容易判别出错的样本名称，这些样本和组内其他样本差异较大。</p>
+
+			<p>在随机森林分析中，我们用“Mean Decrease Accuracy”和“Mean Decrease Gini”来衡量一个代谢物在随机森林中判别分组的重要性。把一个代谢物的取值变为随机数，随机森林预测准确性的降低程度就是“Mean Decrease Accuracy”；“Mean Decrease Gini”则是一个代谢物对分类树所有节点上观测值的异质性的影响。两个值越大，代谢物在随机森林中的重要性越大。图8-2显示了在随机森林中最重要的15种代谢物，这些代谢物应该在分组之间有较大的差异。</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图8-2.png">
+				<h6>图8-2 随机森林中最重要的15种代谢物</h6>
+				<p class="image-description">左边图的横坐标是“Mean Decrease Accuracy”，它衡量了一个代谢物在随机森林中的重要性；右边图是15中代谢物在两个分组里的含量的热图。</p>
+			</div>
+
+
+			<div id="a8.2" class="anchor"></div>
+			<h3>8.2 支持向量机（<a href="07-SupportVectorMachine">07-SupportVectorMachine目录</a>）</h3>
+
+			<p>支持向量机（support vector machines, SVM）是一种二分类模型，它的基本模型是定义在特征空间上的间隔最大的线性分类器，间隔最大使它有别于感知机；SVM还包括核技巧，这使它成为实质上的非线性分类器。SVM的的学习策略就是间隔最大化，可形式化为一个求解凸二次规划的问题，也等价于正则化的合页损失函数的最小化问题。SVM的的学习算法就是求解凸二次规划的最优化算法。</p>
+
+			<p>支持向量机应用在组学数据时，通常是挑选几种在分类中作用最大的feature(代谢物)来参与分析，而不是用所有的feature参与分析。使用的feature过多，可能导致共线性和过拟合的问题。如图8-3所示，随着挑选的feature数量增加，SVM模型预测准确度逐渐增加。</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图8-3.png">
+				<h6>图8-3 SVM预测准确性随着挑选代谢物的数量的增加而增加。</h6>
+				<p class="image-description"></p>
+			</div>
+
+
+			<p>SVM模型的最终预测效果可以用ROC曲线来表示，如图8-4。AUC曲线下面积越接近1，说明模型预测效果越好，也说明分组间代谢物的差异越大。</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图8-4.png">
+				<h6>图8-4 SVM ROC 曲线</h6>
+				<p class="image-description">横坐标为准确度，纵坐标为敏感度，准确度和敏感度越高，模型的预测效果越好。AUC为曲线下面积，曲线下面积越接近1，模型预测效果越好。</p>
+			</div>
+
+
+			<p>同时，我们用套袋法和SVM结合，即用Bootstraping的到k个训练集，在每个训练集里独立挑选最重要的代谢物训练SVM。计算每个代谢物在k个训练集中被选中的频率，这个频率可以用来衡量代谢物在SVM分析中的重要性，同时也可以计算代谢物在所有训练集中的平均重要性。图8-5展示了在SVM分析中最重要的15个代谢物，这些代谢物在分组间应该有较大差异。</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图8-5.png">
+				<h6>图8-5 SVM中最重要的15种代谢物</h6>
+				<p class="image-description">左边图的横坐标是SVM平均重要性，右边图是15中代谢物在两个分组里的含量的热图。</p>
+			</div>
+
+
+
+			<hr>
+			<div id="a9" class="anchor"></div>
+			<h2>九 代谢通路分析（<a href="08-PathwayTopoEnrichment">08-PathwayTopoEnrichment目录</a>）</h2>
+
+			<div id="a9.1" class="anchor"></div>
+			<h3>9.1 富集分析</h3>
+			<p>富集分析的目的寻找在某个生物学过程中起关键作用的生物通路, 从而揭示和理解生物学过程的基本分子机制。对于代谢组数据，在富集分析之前，我们需要挑选一些重点关注的代谢物，通常是那些在分组间有显著差异（T检验，p<0.05）的代谢物，再看这些代谢物都在哪些代谢通（KEGG物种特异性代谢通路，不同物种的代谢通路略有区别）路中出现，通过计算这些代谢通路的ORA（Over-Representation Analysis，过表达分析）p值，从而判断关注的代谢物（显著差异的代谢物）是否在这些代谢通路中显著富集。图9-1中显示了差异代谢物显著富集的代谢通路。这些代谢通路可能在所研究的生物学过程中有重要意义。</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图9-1.png">
+				<h6>图9-1 ORA富集分析</h6>
+				<p class="image-description">横坐标为富集倍数，它是代谢通路中， 观测代谢物数/理论代谢物数。p值的大小用颜色表示，颜色越深，p值越小。 </p>
+			</div>
+
+
+			<div id="a9.2" class="anchor"></div>
+			<h3>9.2 拓扑分析</h3>
+
+			<p>即便关注的代谢物在某个通路中显著富集，我们仍然不知道这些代谢物在这个代谢通路中是否起到关键作用，代谢物对代谢通路究竟有多大影响（Impact）。拓扑分析能够计算关注的代谢物在代谢通路中的作用大小（用Impact衡量）。例如，如果代谢通路中，一个代谢物下游没有其他任何代谢物或基因，那么我们可以判断这个代谢物对代谢通路的影响基本为零。相反，如果一个代谢物非常靠近上游，且下游有很多其他代谢物和基因，那么这个代谢物对代谢通路的影响一定很大。我们通常将拓扑分析和富集分析结合起来，从而判断一个代谢通路是否在所研究的生物学过程中起到关键作用。图9-2中蓝色区域的代谢通路是ORA富集分析中显著的代谢通路，纵坐标展示了这些代谢通路在拓扑分析中的Impact。</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图9-2.png">
+				<h6>图9-2 ORA富集分析和拓扑分析</h6>
+				<p class="image-description">横坐标为ORA分析p值，蓝色区域是显著的（p<0.05）；纵坐标为拓扑分析Impact。 </p>
+			</div>
+
+			<div id="a9.3" class="anchor"></div>
+			<h3>9.3 代谢通路图</h3>
+			<p>代谢通路图能够比较直观的反映代谢物的上下游关系，作用模式，以及代谢通路的拓扑结构，同时能找到与代谢物关联的基因。图9-3是只包含代谢物的代谢通路，红色代谢物是关注的代谢物，即在分组间有显著差异的代谢物。图9-4是同时包含代谢物和基因的代谢通路（KEGG完整的代谢通路），有颜色的代谢物是在分组间有显著差异的代谢物，颜色对应分组，表示在对应分组中代谢物含量较高（相对其它分组）。</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图9-3.png">
+				<h6>图9-3 只包含代谢物的代谢通路</h6>
+				<p class="image-description">红色代谢物是在分组间有显著差异的代谢物。 </p>
+			</div>
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图9-4.png">
+				<h6>图9-4 代谢物和基因的代谢通路</h6>
+				<p class="image-description">有颜色的代谢物是在分组间有显著差异的代谢物，颜色对应分组，表示在对应分组中代谢物含量较高（相对其它分组）。 </p>
+			</div>
+
+
+			<hr>
+			<div id="a10" class="anchor"></div>
+			<h2>十 相关分析（<a href="09-CorrelationAnalysis">09-CorrelationAnalysis目录</a>）</h2>
+			<p>通过对比每一个组的代谢物相关性分析谱图，我们可以观察代谢物的相关性在不同组间是否有变化。因为在病理条件下，某些代谢物之间的相关性可能会改变，如从正相关变为不相关或负相关。这将会提示我们关注在这些代谢物所在的通路。我们提供了单个分组以及所有分组一起的pearson相关分析结果的表格，聚类和不聚类的热图，如图10-1是所有分组一起的聚类的相关性热图。</p>
+
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图10-1.png">
+				<h6>图10-1 Pearson相关性热图</h6>
+				<p class="image-description">代谢物的相关系数矩阵，相关系数由颜色表示，红色正相关，绿色负相关。</p>
+			</div>
+
+
+
+
+			<hr>
+			<div id="a11" class="anchor"></div>
+			<h2><a id="a11"></a>十一 参考文献</h2>
+			<p>
+				[1] Jasmine C , Jianguo X , Oliver S . MetaboAnalystR: an R package for flexible and reproducible analysis of metabolomics data[J]. Bioinformatics, 2018.<br>
+				[2] Westerhuis J A , Velzen E J J V , Hoefsloot H C J , et al. Multivariate paired data analysis: multilevel PLSDA versus OPLSDA[J]. Metabolomics, 2010, 6(1):119-128.<br>
+			</p>
+
+			<hr>
+			<div id="a12" class="anchor"></div>
+			<h2><a id="a12"></a>十二 交付结果目录结构 </h2>
+			<p>交付数据分为若干个子目录。 </p>
+			<p>
+				<strong>|ResultsMetabonome/  [主要的结果文件]</strong><br>
+				|-- 00-DataProcess / [数据预处理相关信息]<br>
+				|-- 01-ConcentrationSummary / [代谢物含量统计]<br>
+				|-- 02-PCA / [PCA分析结果]<br>
+				|-- 03-PLSDA / [PLSDA分析结果]<br>
+				|-- 04-OPLSDA / [OPLSDA分析结果]<br>
+				|-- 05-FoldChange / [倍数变化火山图]<br>
+				|-- 06-RandomForest / [随机森林分析结果]<br>
+				|-- 07-SupportVectorMachine / [支持向量机]<br>
+				|-- 08-PathwayTopoEnrichment / [通路分析结果，富集分析，拓扑分析]<br>
+				|-- 09-CorrelationAnalysis / [相关分析结果]<br>
+				|-- FiguresTablesForReport / [本报告的图表文件夹]<br>
+				|-- 结题报告.html / [结题报告]<br>
+			</p>
+
+			<hr>
+			<div id="a13" class="anchor"></div>
+			<h2><a id="a13"></a>十三 联系我们</h2>
+			<p>
+				地址：广东省深圳市南山区南海大道3688号 <br>
+				邮编：518060<br>
+			</p>
+			<!-- /blockquote -->
+		</div> 
+	</body>
+
+</html>
