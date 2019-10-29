@@ -1,19 +1,38 @@
 #!/usr/bin/env Rscript
+library(optparse)
+
+#######arguments
+option_list <- list( 
+    make_option(c("-i", "--input"),metavar="path", dest="cpd",help="Specify the path of metabolites abundance table. Required",default=NULL),
+    make_option(c("-m", "--map"),metavar="path",dest="map", help="Specify the path of mapping file. Required",default=NULL),
+    make_option(c("-q", "--qc-meta"),metavar="path",dest="qc", help="Specify the path of metadata file for QC. Required",default=NULL),
+    make_option(c("-c", "--category"),metavar="string",dest="category", help="Category to compare. Required",default=NULL),
+    make_option(c("-d", "--database"),metavar="path", dest="db",help="Path to the database directory.",default="/home/cheng/Databases/Metabonome_database/database"),
+    make_option(c("-s", "--species"),metavar="string", dest="species",help="The organism type of metabolites",default="hsa"),
+    make_option(c("-o", "--output"),metavar="directory",dest="out", help="Specify the directory of output files",default="./")
+    )
+opt <- parse_args(OptionParser(option_list=option_list,description = "The metabonome analysis pipeline"))
+
+#####packages
 library("purrr")
 library("RColorBrewer")
 library("statTarget")
 library("getopt")
 library("stringr")
+
+
 #####arguments
-out_dir = "/home/cheng/pipelines/testdir/cpd_pipline"
-db_dir = "/home/cheng/pipelines/Metabonome/database/"
-cpd_file = "/home/cheng/pipelines/testdir/cpd_pipline/compound_abundance.csv"
-metadata_file = "/home/cheng/pipelines/testdir/cpd_pipline/metadata.csv"
-map_file = "/home/cheng/pipelines/testdir/cpd_pipline/mapping_file.txt"
-categories = c("Category")
-organism = "hsa"
+out_dir = opt$out # "/home/cheng/pipelines/testdir/cpd_pipline"
+db_dir = opt$db # "/home/cheng/pipelines/Metabonome/database/"
+cpd_file = opt$cpd # "/home/cheng/pipelines/testdir/cpd_pipline/compound_abundance.csv"
+metadata_file = opt$qc # "/home/cheng/pipelines/testdir/cpd_pipline/metadata.csv"
+map_file = opt$map # "/home/cheng/pipelines/testdir/cpd_pipline/mapping_file.txt"
+categories = str_split(opt$category, ',')[[1]]
+organism = opt$species
 base_dir<-normalizePath(dirname(get_Rscript_filename()))
 source(paste(base_dir, "metabonome_core.R", sep = "/"))
+
+
 #####arguments check
 out_dir <- normalizePath(out_dir)
 db_dir <- normalizePath(db_dir)
