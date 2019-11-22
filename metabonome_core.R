@@ -6,6 +6,8 @@ library("ggrepel")
 library("stringr")
 library("pheatmap")
 library("psych")
+library("ggpubr")
+# library("ggbiplot")
 #'util
 choose<-function(condition,choice1,choice2){
   if(condition){
@@ -41,6 +43,33 @@ up_to_down<-function(m){
   return(m)
 }
 
+my_comb <- function(set, n){
+  list_append<-function(ls, ele){
+    len <- length(ls)
+    ls[[len+1]] <- ele
+    return(ls)
+  }
+  env1 <- new.env()
+  env1$results<-list()
+  env1$current_vector <- c()
+  len <- length(set)
+  ceil <- len - n + 1
+  combinations<-function(l, j){
+    if(l==n){
+      env1$results<-list_append(env1$results, env1$current_vector)
+      return(NULL)
+    }
+    for(i in j:(ceil+l)){
+      env1$current_vector <- c(env1$current_vector, set[i])
+      combinations(l+1, i+1)
+      env1$current_vector <- env1$current_vector[-length(env1$current_vector)]
+    }
+  }
+  combinations(0, 1)
+  return(env1$results)
+}
+
+
 set_db_location <- function(location){
   DB_LOCATION <<- normalizePath(location)
 }
@@ -56,7 +85,7 @@ prepare<-function(table, anal.type="stat"){
     mSet<-Read.TextData(mSet, table, "row", "disc")
     mSet<-SanityCheckData(mSet)
     mSet<-ReplaceMin(mSet);
-    mSet<-FilterVariable(mSet, "iqr", "F", 25)
+    # mSet<-FilterVariable(mSet, "iqr", "F", 25)
     ## [1] " Further feature filtering based on Interquantile Range"
     mSet<-PreparePrenormData(mSet)
     mSet<-Normalization(mSet, "MedianNorm", "LogNorm", "AutoNorm", ratio=FALSE, ratioNum=20)
@@ -111,12 +140,14 @@ asign_category_map<-function(category, map=NA){
 
 
 rownames_join<-function(x,y){
+    # print(x)
+    # print(y)
     return(data.frame(x, y[match(rownames(x), rownames(y)), ], check.rows=TRUE, check.names=FALSE))
 }
 
 
 
-cross_reference<-function(query_compounds, mask=c("\\'", "\\s")){
+cross_reference<-function(query_compounds, type="name", mask=c("\\'", "\\s")){
   norm_for_match<-function(x){
     x<-tolower(x)
     for(s in mask){
@@ -130,22 +161,27 @@ cross_reference<-function(query_compounds, mask=c("\\'", "\\s")){
   class_cpd <- cpd_class[, 2]
   names(class_cpd) <- cpd_class[, 1]
   # query_table<-read.table(query_table, header = TRUE, sep = "\t", quote = "", stringsAsFactors = FALSE, na.strings = "")
-  query_name<-sapply(query_compounds, norm_for_match)
-  cpd_name<-sapply(cpd_map[, 2], norm_for_match)
-  cpd_map<-rbind(cpd_map, NA)
-  nr<-nrow(cpd_map)
-  find_index<-function(q){
-    for(i in 1:length(cpd_name)){
-      for(ob in str_split(cpd_name[i],";")[[1]]){
-        if(ob==q){
-          return(i)
+  if(type=="name"){
+    query_name<-sapply(query_compounds, norm_for_match)
+    cpd_name<-sapply(cpd_map[, 2], norm_for_match)
+    cpd_map<-rbind(cpd_map, NA)
+    nr<-nrow(cpd_map)
+    find_index<-function(q){
+      for(i in 1:length(cpd_name)){
+        for(ob in str_split(cpd_name[i],";")[[1]]){
+          if(ob==q){
+            return(i)
+          }
         }
       }
+      return(nr)
     }
-    return(nr)
+    matched_index<-sapply(query_name, find_index)
+  }else{
+    matched_index<-match(query_compounds, cpd_map[type][,1])
   }
-  matched_index<-sapply(query_name, find_index)
-  find_results<-data.frame(query_name=query_compounds, cpd_map[matched_index, ])
+
+  find_results<- data.frame(cpd_map[matched_index, ], check.names=FALSE)
   find_results$class <- class_cpd[find_results["kegg_id"][,1]]
   # find_results$class[is.na(find_results$class)] <- "Others"
   return(find_results)
@@ -251,22 +287,30 @@ PLSDA<-function(table, out_dir, colors=NA){
     mSet<-tryCatch(
         {
             UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
-            mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2)
+            mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
             mSet<-PLSR.Anal(mSet, reg=TRUE)
-            mSet<-PLSDA.CV(mSet, methodName = "T", compNum = 2, choice = "Q2")
-            mSet<-PLSDA.Permut(mSet)
+            # 
+            tryCatch(
+              {
+                mSet<-PLSDA.CV(mSet, methodName = "L", compNum = 2, choice = "Q2")
+                mSet<-PLSDA.Permut(mSet, type="accu")
+                mSet<-PlotPLS.Permutation(mSet = mSet, imgName="plsda_permutation_", format = "pdf", dpi = 300, width = 30)
+              },
+              error=function(e){print("Permutation failed!");print(e)}
+            )            
+            # browser()
             remove_files()
             mSet<-PlotPLS2DScore(mSet, "plsda_score2d_", "pdf", 300, width=30, 1,2,0.95,0,0)
             mSet<-PlotPLS3DScoreImg(mSet,"plsda_score3d_","pdf", 300, 30, 1,2,3, 40)
-            mSet<-PlotPLS.Permutation(mSet = mSet, imgName="plsda_permutation_", format = "pdf", dpi = 300, width = 30)
-            # browser()
+            # 
             imp<-purrr::reduce(list(mSet$analSet$plsr$loadings[,1:3], mSet$analSet$plsda$vip.mat, mSet$analSet$plsda$coef.mat, mSet$analSet$tt$sig.mat), rownames_join)
             imp<-imp[, -5]
             colnames(imp)[1:5]<-c("comp1.loadings", "comp2.loadings", "comp3.loadings", "VIP", "Coefficients")
             imp["-log10(FDR adjusted p)"] <- -log10(imp["FDR"])
-            plot_volcano(imp, out_img = "plsda_features_importance.pdf", axis = c("VIP","-log10(FDR adjusted p)"), threshold=c(1, 1.3))
+            plot_volcano(imp, out_img = "plsda_features_importance_fdr_adjusted.pdf", axis = c("VIP","-log10(FDR adjusted p)"), threshold=c(1, 1.3))
+            plot_volcano(imp, out_img = "plsda_features_importance.pdf", axis = c("VIP","-log10(p)"), threshold=c(1, 1.3))
             write.csv(imp, "plsda_features_importance.csv")
-
+            # print(imp)
         },
         error=function(e){print(e)},
         finally={setwd(PWD)}
@@ -298,19 +342,26 @@ OPLSDA<-function(table, out_dir, colors=NA){
     mSet<-tryCatch(
         {
             UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
-            mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2)
+            mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
             mSet<-OPLSR.Anal(mSet, reg=TRUE)
-            remove_files()            
-            mSet<-OPLSDA.Permut(mSet, num=100)
+            remove_files()
             mSet<-PlotOPLS2DScore(mSet, "oplsda_score2d_", "pdf", 300, width=30, 1,2,0.95,0,0)
+            # tryCatch(
+            #  {
+            mSet<-OPLSDA.Permut(mSet, num=100)
             PlotOPLS.Permutation(mSet,"oplsda_permutation_",format="pdf", dpi=300, width=30)
+            #  },
+            #  error=function(e){print("Permutation failed!");print(e)}
+            #)
+            # browser()
             imp<-data.frame(mSet$analSet$oplsda$vipVn, mSet$analSet$oplsda$coefficients, check.rows=T)
             colnames(imp)<-c("VIP", "Coefficients");
             load.mat <- cbind(mSet$analSet$oplsda$loadingMN[,1], mSet$analSet$oplsda$orthoLoadingMN[,1])
             colnames(load.mat) <- c("Loading (t1)","OrthoLoading (to1)")
             imp <- reduce(list(load.mat, imp, mSet$analSet$tt$sig.mat), rownames_join)
             imp["-log10(FDR adjusted p)"] <- -log10(imp["FDR"])
-            plot_volcano(imp, out_img = "oplsda_features_importance.pdf", axis = c("VIP","-log10(FDR adjusted p)"), threshold=c(1, 1.3))
+            plot_volcano(imp, out_img = "oplsda_features_importance_fdr_adjusted.pdf", axis = c("VIP","-log10(FDR adjusted p)"), threshold=c(1, 1.3))
+            plot_volcano(imp, out_img = "oplsda_features_importance.pdf", axis = c("VIP","-log10(p)"), threshold=c(1, 1.3))
             write.csv(imp, "oplsda_features_importance.csv")
             write.csv(mSet$analSet$oplsda$modelDF, file="oplsda_model_fitness_summary.csv")
             
@@ -327,7 +378,7 @@ RF<-function(table, out_dir, colors=NA){
   mSet<-tryCatch(
     {
       UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
-      mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2)
+      mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
       mSet<-RF.Anal(mSetObj = mSet)
       remove_files(c("csv"))
       imp <- reduce(list(mSet$analSet$rf$importance, mSet$analSet$tt$sig.mat), rownames_join)
@@ -344,7 +395,7 @@ RF<-function(table, out_dir, colors=NA){
 }
 
 
-groupCenter<-function(table, method="mean"){
+groupCenter<-function(table, method="mean", check.names=TRUE){
   df <- choose(is.character(table), read.csv(table, quote = "", check.names = F, stringsAsFactors = F), table)
   rownames(df) <- df[, 1]
   gp <- df[, 2]
@@ -354,11 +405,16 @@ groupCenter<-function(table, method="mean"){
   colnames(df)<-paste(colnames_cp, choose(method=="mean","-Mean","-Median"), sep = "")
   df<-data.frame(df, check.names = FALSE)
   df["Which-Max"]<-colnames_cp[apply(df, 1, which.max)]
+  if(check.names){
+    for(m in c("\\(", "\\)", "\\+")){
+      rownames(df) <- str_replace_all(rownames(df), m, "")
+    }
+  }
   return(df)
 }
 
 
-Volcano <- function(table, out_dir, cmpType=0, colors=NA){
+Volcano <- function(table, out_dir="./", cmpType=0, colors=NA){
   mSet<-prepare(table);
   gp_mean<-groupCenter(table = table);
   prepare_out_dir(out_dir);
@@ -367,7 +423,8 @@ Volcano <- function(table, out_dir, cmpType=0, colors=NA){
       UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
       # mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2)
       # mSet<-FC.Anal.unpaired(mSetObj = mSet)
-      mSet<-Volcano.Anal(mSet, threshp = 1, fcthresh = 1, cmpType = cmpType)
+      mSet<-Volcano.Anal(mSet, threshp = 2, fcthresh = 1, cmpType = cmpType, equal.var = F)
+      # browser()
       imp <- reduce(list(mSet$analSet$volcano$sig.mat, gp_mean), rownames_join)
       write.csv(imp, "Volcano_features_significance.csv")
       mSet<-Volcano.Anal(mSet, threshp = 0.05, fcthresh = 2, cmpType = cmpType)
@@ -388,7 +445,7 @@ RF<-function(table, out_dir){
   mSet<-tryCatch(
     {
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
-      mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2)
+      mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
       mSet<-RF.Anal(mSetObj = mSet)
       remove_files(c("csv"))
       imp <- reduce(list(mSet$analSet$rf$importance, mSet$analSet$tt$sig.mat), rownames_join)
@@ -412,7 +469,7 @@ SVM<-function(table, out_dir){
   mSet<-tryCatch(
     {
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
-      mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2)
+      mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
       # Set the biomarker analysis mode to perform Multivariate exploratory ROC curve analysis ("explore")
       mSet<-SetAnalysisMode(mSet, "explore")
       # Prepare data for biomarker analysis
@@ -452,7 +509,7 @@ enrichment_from_peak<-function(table, out_dir, organism="hsa"){
       # Re-perform normalization, without auto-scaling
       # mSet<-Normalization(mSet, "MedianNorm", "LogNorm", "NULL", ratio=FALSE, ratioNum=20)
       # Perform t-test
-      mSet<-Ttests.Anal(mSet, F, 0.25, FALSE, TRUE)
+      mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 0.25, equal.var = F)
       # Convert the output of the t-test to the proper input for mummichog analysis
       mSet<-Convert2Mummichog(mSet)
       find_mummi_input<-function(){
@@ -536,7 +593,7 @@ enrichment_from_compounds <- function(table, out_dir, threshp = 0.05){
   mSet<-tryCatch(
     {
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
-      mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = threshp)
+      mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = threshp, equal.var = F)
       df <- read.csv(table, stringsAsFactors = F, check.names = F)
       df <- df[, c(1,2,which(colnames(df)%in%rownames(mSet$analSet$tt$sig.mat)))]
 
@@ -632,7 +689,7 @@ network_map <- function(table, out_dir, threshp = 0.5, organism="hsa", paired=TR
         colnames(data_mat) <- c("#KEGG",	"logFC")
         write.table(data_mat, file = "integ_cmpds.txt", row.names = F, sep = "\t", quote = FALSE)
       }else{
-        mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = threshp)
+        mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = threshp, equal.var = F)
         imp <- mSet$analSet$tt$sig.mat
         data_mat <- data.frame(rownames(imp), imp[, 1])
         colnames(data_mat) <- c("#KEGG",	"logFC")
@@ -664,7 +721,7 @@ network_map <- function(table, out_dir, threshp = 0.5, organism="hsa", paired=TR
 }
 
 
-pathway_analysis <- function(table, out_dir, threshp = 0.5, organism="hsa"){
+pathway_analysis <- function(table, out_dir, threshp = 0.05, organism="hsa"){
   # table <- normalizePath(table)
   mSet<-prepare(table);
   prepare_out_dir(out_dir);
@@ -673,9 +730,12 @@ pathway_analysis <- function(table, out_dir, threshp = 0.5, organism="hsa"){
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
       # mSet<-Volcano.Anal(mSet, threshp = threshp, fcthresh = 1.2, cmpType = cmpType)
       # imp <- mSet$analSet$volcano$sig.mat
-      mSet <- Ttests.Anal(mSet = mSet, nonpar = F, threshp = threshp)
+      mSet <- Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
       imp <- mSet$analSet$tt$sig.mat
+      # browser()
+      imp <- imp[imp[, 2]<=threshp, ]
       tmp.vec <- rownames(imp)
+      write.csv(imp, file = "t_test.csv")
       file.rename("t_test.csv", "selected_compounds.csv")
       write("######################Perform topo and enrichment analysis", stdout())
       require_db(c("hsa/hsa.rda", "compound_db.rds", "syn_nms.rds"))
@@ -811,7 +871,7 @@ abundance_barplot <- function(table, out_dir="./", by_group_mean=FALSE, num=20, 
 }
 
 
-abundance_heatmap <- function(table, out_dir="./", by_group_mean=FALSE, num=30, prefix="", colors = NA, trans = FALSE, cluster = TRUE){
+abundance_heatmap <- function(table, out_dir="./", by_group_mean=FALSE, num=30, prefix="", colors = NA, tile_colors=c("#00FF00","#222222","#FF0000"), trans = FALSE, cluster = TRUE, scale_method="std"){
   prepare_out_dir(out_dir);
   mSet<-tryCatch(
     {
@@ -827,7 +887,11 @@ abundance_heatmap <- function(table, out_dir="./", by_group_mean=FALSE, num=30, 
       sum_otu<-colSums(otu)
       sel<-head(order(sum_otu,decreasing = T), num)
       otu<-otu[, sel]
-      otu<-log(otu+1,base=10)
+      if(scale_method=="log"){
+        otu<-log(otu+1, base=10)
+      }else{
+        otu<-scale(otu, center = TRUE, scale = TRUE)
+      }
       p2<-3+(0.3*dim(otu)[1])+(0.06*p1)
       p3<-dim(otu)[2]
       if(trans){
@@ -875,7 +939,7 @@ abundance_heatmap <- function(table, out_dir="./", by_group_mean=FALSE, num=30, 
       pdf(paste(prefix,"heatmap.pdf",sep = ""), height=ht,width=wd)
       pheatmap(otu,annotation_row=annotation_row,
                annotation_col=annotation_col,fontsize=10,border_color = "black",
-               color = colorRampPalette(colors = c("#FFCCCC","red","#222222"))(100),
+               color = colorRampPalette(colors = tile_colors)(100),
                cluster_cols=cc,clustering_distance_cols="euclidean",
                cluster_rows=cr,clustering_distance_rows="euclidean",annotation_colors=annotation_color)
       dev.off()
@@ -887,13 +951,13 @@ abundance_heatmap <- function(table, out_dir="./", by_group_mean=FALSE, num=30, 
 
 
 
-group_cor_heatmap <- function(table, out_dir="./", prefix="", cluster = FALSE){
+group_cor_heatmap <- function(table, out_dir="./", prefix="", cluster = FALSE, show_names=FALSE){
   prepare_out_dir(out_dir);
   mSet<-tryCatch(
     {
       cor.mat <- corr.test(table, method ="pearson", adjust="fdr")
       pdf(paste(prefix,"pearson_cor_heatmap.pdf",sep = ""), height=10, width=11)
-      pheatmap(cor.mat$r, show_rownames = FALSE,  show_colnames = FALSE,
+      pheatmap(cor.mat$r, show_rownames = show_names,  show_colnames = show_names,
                color = colorRampPalette(colors = c("green", "#555555", "red"))(100),
                border_color = NA,
                cluster_rows=cluster, clustering_distance_rows="euclidean",
@@ -914,6 +978,108 @@ get_database<- function(){
 }
 
 
+sig_boxplot <- function(table="/home/cheng/pipelines/testdir/testbono/human_cachexia.csv", out_dir="./", threshp = 0.05, colors=NA, top=25, pair_wise=FALSE, width=NA, height=NA){
+  # table <- normalizePath(table)
+  mSet<-prepare(table);
+  prepare_out_dir(out_dir);
+  mSet<-tryCatch(
+    {
+      # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
+      # mSet<-Volcano.Anal(mSet, threshp = threshp, fcthresh = 1.2, cmpType = cmpType)
+      # imp <- mSet$analSet$volcano$sig.mat
+      mSet <- Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
+      imp <- mSet$analSet$tt$sig.mat
+      # browser()
+      imp <- imp[imp[, 2]<=threshp, ]
+      imp <- imp[order(imp[, 2]), ]
+      tmp.vec <- head(rownames(imp), top)
+      actual_num <- length(tmp.vec)
+      datmat <- data.frame(Category=mSet$dataSet$cls, mSet$dataSet$norm[, tmp.vec])
+      df <- melt(datmat, id.vars = "Category")
+      groups <- unique(datmat[, 1])
+      len_g <- length(groups)
+      if(pair_wise|len_g==2){
+        method <- "t.test"
+      }else{
+        method <- "anova"
+      }
+      remove_files(c("t_test","anova"))
+      num_col <- ceiling(sqrt(actual_num))
+      num_row <- ceiling(actual_num/num_col)
+      p <- ggplot(data = df, mapping = aes(x=Category, y=value, fill=Category)) + geom_boxplot() + theme_bw() +
+        stat_compare_means(mapping = aes(group=Category), comparisons = choose(pair_wise, my_comb(groups, 2), NULL),
+                           label = "p.signif", label.x = (1+len_g)/2, method = method)+
+        facet_wrap(facets = "variable", ncol = num_col) + 
+        scale_fill_manual(values = or(colors, rainbow(len_g))) +
+        theme(legend.position = "none") +
+        labs(x="", y="")
+     wd <- num_col * 3
+     ht <- num_row * 3.5
+     ggsave(filename = "Significant_features_boxplot.pdf", plot = p, width = or(width, wd), height = or(height, ht))
+    },
+    error=function(e){
+      print(e);
+    },
+    finally={setwd(PWD)}
+  )
+}
 
 
-
+elipse_pca <- function(table="/home/cheng/pipelines/testdir/testbono/human_cachexia.csv", file_biplot="PCA.pdf", file_pc1="PC1.pdf", colors=NA, sam_order=NA, out_dir="./", label=T){
+    # table <- normalizePath(table)
+    mSet<-prepare(table);
+    prepare_out_dir(out_dir);
+    mSet<-tryCatch(
+      {
+        df.pca <- prcomp(mSet$dataSet$norm, center = TRUE, scale. = TRUE)
+        # pdf("")
+        label <- choose(label, rownames(df.pca$x), NA)
+        len_g <- length(unique(mSet$dataSet$cls))
+        ss <- apply(df.pca$x, 2, var)
+        pct <- ss/sum(ss)
+        xylab <- paste(c("PC1 (", "PC2 ("), round(pct[1:2]*100, 2), "%)", sep = "")
+        if(!is.na(file_biplot)){
+          p<-ggplot(data = data.frame(scale(df.pca$x)), aes(x=PC1, y=PC2))+
+            theme_classic()+
+            labs(x=xylab[1], y=xylab[2])+
+            # geom_abline(data = data.frame(slope=c(0,91), intercept=c(0,0)), mapping = aes(slope=slope, intercept=intercept), size=0.1)+
+            geom_hline(yintercept = 0, size=0.1) + geom_vline(xintercept = 0, size=0.1) +
+            scale_x_continuous(limits = c(-3, 3)) + scale_y_continuous(limits = c(-3, 3))+
+            geom_point(size=4, mapping = aes(color= mSet$dataSet$cls))+
+            geom_text_repel(label=label, size=2) +
+            scale_color_manual(values = or(colors, rainbow(len_g))) +
+            stat_ellipse(level = 0.95, type = "norm", size=0.1, segments = 300)+
+            theme(legend.title = element_text(size = 0), text = element_text(size = 6))
+          browser()
+          ggsave(plot=p, file=file_biplot, width=5, height=4.3)
+        }
+        if(!is.na(file_pc1)){
+          pcdf <- df.pca$x
+          pcdf <- data.frame(Sample=choose(is.na(sam_order),rownames(pcdf), factor(rownames(pcdf), levels = sam_order)), PC1=pcdf[, 1])
+          pc1 <- pcdf[,2]
+          pc_mean <- mean(pc1)
+          pc_sd <- sd(pc1)
+          sds <- c(pc_sd*2, pc_sd*3)
+          intercept_y <- c(pc_mean-rev(sds), pc_mean, pc_mean+sds)
+          col <- c("red", "green", "black", "green", "red")
+          ltype <- c("dashed", "dashed", "solid", "dashed", "dashed")
+          text_data <- data.frame(x=4, y=intercept_y+0.5, lab=c("Mean-3SD","Mean-2SD","Mean", "Mean+2SD","Mean+3SD"), size=6)
+          # browser()
+          p <- ggplot(data = pcdf, mapping = aes(x=Sample, y=PC1)) + 
+            geom_point(stat = "identity") +
+            geom_hline(linetype=ltype, color=col, yintercept=intercept_y) +
+            geom_text(data = text_data, mapping = aes(x=x,y=y,label=lab), size=2) +
+            theme_classic2() +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1),
+                  text = element_text(size = 9))
+          w1 <- length(pc1) * 0.1 + 4
+          w1 <- ifelse(w1>=50, 50, w1)
+          ggsave(filename = file_pc1, plot = p, width = w1, height = 6)
+        }
+      },
+      error=function(e){
+        print(e);
+      },
+      finally={setwd(PWD)}
+    )
+}

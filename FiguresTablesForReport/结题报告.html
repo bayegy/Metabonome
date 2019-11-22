@@ -241,7 +241,7 @@
 				</button>
 				
 				<div class="dropdown-menu">
-					<a class="dropdown-item" href="#a3.1">3.1 质量控制（QC）</a>
+					<a class="dropdown-item" href="#a3.1">3.1 质量评估和质量控制</a>
 					<a class="dropdown-item" href="#a3.2">3.2 标准化（Normalization）</a>
 				</div>
 
@@ -280,7 +280,7 @@
 			</div>
 			
 
-			<button type="button" class="btn btn-info"><a class="buta" href="#a7">七 倍数变化火山图</a></button>
+			<button type="button" class="btn btn-info"><a class="buta" href="#a7">七 单变量分析</a></button>
 		
 
 
@@ -294,22 +294,12 @@
 					<a class="dropdown-item" href="#a8.2">8.2 支持向量机</a>
 				</div>
 			</div>
-
-			<div class="btn-group">
-				<button type="button" class="btn btn-info"><a class="buta" href="#a9">九 通路分析</a></button>
-			    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
-  					<span class="caret"></span>
-				</button>
-				<div class="dropdown-menu">
-					<a class="dropdown-item" href="#a9.1">9.1 富集分析</a>
-					<a class="dropdown-item" href="#a9.2">9.2 拓扑分析</a>
-					<a class="dropdown-item" href="#a9.3">9.3 代谢通路图</a>
-				</div>
-			</div>
-			<button type="button" class="btn btn-info"><a class="buta" href="#a10">十 相关分析</a></button>
-			<button type="button" class="btn btn-info"><a class="buta" href="#a11">十一 参考文献</a></button>
-			<button type="button" class="btn btn-info"><a class="buta" href="#a12">十二 交付结果目录结构</a></button>
-			<button type="button" class="btn btn-info"><a class="buta" href="#a13">十三 联系我们</a></button>
+			<button type="button" class="btn btn-info"><a class="buta" href="#a9">九 相关分析</a></button>
+			{{pathway_nav}}
+			
+			<button type="button" class="btn btn-info"><a class="buta" href="#a11">{{od1}} 参考文献</a></button>
+			<button type="button" class="btn btn-info"><a class="buta" href="#a12">{{od2}} 交付结果目录结构</a></button>
+			<button type="button" class="btn btn-info"><a class="buta" href="#a13">{{od3}} 联系我们</a></button>
 			
 			
 			
@@ -347,13 +337,7 @@
 			<h3>
 				2.1 实验流程
 			</h3>
-
-
-			<div class="image-block">
-				<img src="FiguresTablesForReport/src/image/2-1.png">
-				<h6>图2-1 代谢组实验流程</h6>
-				<p class="image-description"></p>
-			</div>
+			{{proc}}
 
 
 			<div id="a2.2" class="anchor"></div>
@@ -367,9 +351,9 @@
 				<li>样本数据的标准化</li>
 				<li>代谢物含量统计（柱形图，热图）</li>
 				<li>无监督的降维分析（PCA）</li>
-				<li>特征代谢物（biomarker）的筛选（PLSDA，OPLSDA，倍数变化火山图，机器学习）</li>
-				<li>特征代谢物的通路分析（富集分析，拓扑分析，通路图）</li>
+				<li>特征代谢物（biomarker）的筛选（PLSDA，OPLSDA，单变量分析，火山图，机器学习）</li>
 				<li>相关分析</li>
+				<li>如果是非靶向代谢组，还可以进行特征代谢物的通路分析（富集分析，拓扑分析，通路图）</li>
 			</ol>
 
 			<div class="image-block">
@@ -385,17 +369,32 @@
 				三 数据预处理 (<a href="00-DataProcess">00-DataProcess目录</a>)
 			</h2>
 			<div id="a3.1" class="anchor"></div>
-			<h3>3.1 质量控制（QC）（<a href="00-DataProcess/01-QC">00-DataProcess/01-QC</a>）</h3>
-			<p>质量控制是生物分析的基本概念之一，用在保证组学测定的数据的重复性和精确性。由于色谱系统与质谱直接与样品接触， 随着分析样品的增多，色谱柱和质谱会逐步的污染，导致信号的漂移，造成测量的系统误差。通过重复使用同一个质控样本(QC样本)来跟踪整个数据采集过程的行为， 已经被大多数的分析化学领域专家推荐和使用。质控样本被用于评估整个质谱数据在采集过程中的信号漂移， 这些漂移进一步能够被精确的算法所识别，校正，提高数据的质量。本流程采用R语言statTarget包的QC-RFSC算法对各个样本的特征（每个代谢物）信号峰进行校正，并记录了每个代谢物的校正效果。QC样本是所有样本取等量混合后的样本，在信号数据采集过程中，在开头，结尾，以及中间部分位点插入QC样本，记录信号漂移情况。所有QC样本都是一样的，如果没有信号漂移，在数据采集过程中，QC样本的信号强度应该是保持不变的。如图3-1所示，如果校正后QC样本点被控制在±%SD（标准差）×30%CV（变异系数，也称为RSD）范围内，即可认为该代谢物的信号校正效果良好。</p>
+			<h3>3.1 质量评估（QA）和质量控制（QC）（<a href="00-DataProcess/01-QA_QC">00-DataProcess/01-QA_QC</a>）</h3>
 
-			<div>
-				
+			<p>利用无监督的主成分分析( Principal Component Analysis , PCA ),我们对每一个组的样品建模,然后展示得分图(score plot, 图3-1 )。这种组内的 PCA 分析摒弃了组间的干扰,能让我们更清晰地观察组内的变异并找出可能的离群点( outlier )。图中每个点代表一个样本,而点在图中的位置由该样本中的所有代谢物共同决定。图中的椭圆是基于 Hotelling T2 计算并画出的 95% 置信区间。样本落在椭圆之外暗示该点可能是个离群点。但通常只有在严重离群如将整个模型拉扯得变形时才会考虑删掉该样本。</p>
+
 			<div class="image-block">
 				<img src="FiguresTablesForReport/图3-1.png">
-				<h6>图3-1 校正前后代谢物信号峰强度随进样顺序的变化图</h6>
-				<p class="image-description">图中每个点对应一个样本，横坐标为信号采集时的进样顺序，纵坐标为对应样本的该代谢物的信号峰强度，蓝色样本点为质控样本点（QC样本）。</p>
+				<h6>图3-1 各分组PCA得分图</h6>
+				<p class="image-description">图中每个点代表一个样本,而点在图中的位置由该样本中的所有代谢物共同决定。图中的椭圆是基于 Hotelling T2 计算并画出的 95% 置信区间。样本落在椭圆之外暗示该点可能是个离群点。</p>
 			</div>
 
+
+
+			<p>也可利用所有样本点PC1的值随进样检测过程的变化来评估实验室样本制备、样本测量过程是否处于可控的状态。样本点超出控制界限(3 倍标准差)被认为是离群点; 连续七个以上样本点在中心线的 2 倍标准差上波动时要及时暂停或停止操作,分析原因,在纠正后继续样本测试。如图3-2, 通常来说,所有点会在控制界限之内。其中,大部分点会在 2 倍标准差之内围绕 平均值 轴上下波动,少量的点会接近控制界限。在大队列的代谢组学研究中,由于仪器的波动,批次间和日间的变异是很常见的。某一个批次的质控样本和测试样本可能会和其他批次的样本有着明显的偏移。因此,在进行后续的统计分析之前,我们可能需要用指控样本来矫正批次间的变异。但是超出三倍标准差的点通常被认为是离群点。如果是不恰当的样本前处理或是进样引起的,离群点样本需要被重新处理和分析。如若不然,这些样本需要进一步的研究,因为可能是真实的生物学差异引起的这些波动。</p>
+
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图3-2.png">
+				<h6>图3-2 各样本点PC1分布</h6>
+				<p class="image-description">横坐标为检测样本，纵坐标对应样本在PCA分析中的PC1值。</p>
+			</div>
+			{{qc_content}}
+<!--				
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图3-3.png">
+				<h6>图3-3 校正前后代谢物信号峰强度随进样顺序的变化图</h6>
+				<p class="image-description">图中每个点对应一个样本，横坐标为信号采集时的进样顺序，纵坐标为对应样本的该代谢物的信号峰强度，蓝色样本点为质控样本点（QC样本）。</p>
+			</div>
 
 			<p>
 				此外我们也评估了所有代谢物的总体校正效果，如图3-2右边图所示，如果所有点都在线的下方，表示所有的代谢物的RSD（相对标准差，也叫变异系数，图3-2中左边图的变异系数是用QC样本计算的）在校正后都下降了，因此校正效果显著。需要注意的是，左边的图是用实验样本算的RSD，在校正过程后，可能增加，也可能减少，但并不是减少的越多越好。
@@ -407,23 +406,19 @@
 				<h6>图3-2 QC样本校正前后各个代谢物（信号峰）的变异系数</h6>
 				<p class="image-description">图中每个点对应一个代谢物，横坐标为校正前的变异系数，纵坐标为校正后的变异系数，如果一个点刚好落在图中虚线上，说明校正前和校正后这个代谢物的变异系数没有发生变化，如果一个点落在虚线下方，说明这个代谢物校正后的变异系数小于校正前的变异系数。</p>
 			</div>
-
-
+-->
 			<div id="a3.2" class="anchor"></div>
-			<h3>3.1 标准化（Normalization）（<a href="00-DataProcess/02-Normlization">00-DataProcess/02-Normlization</a>）</h3>
+			<h3>3.2 标准化（Normalization）（<a href="00-DataProcess/02-Normlization">00-DataProcess/02-Normlization</a>）</h3>
 			<p>
-				代谢物标准化的目的是使得所有代谢物的均值和标准差（或者说中位数，四分位点，scale）在同一个水平上。PCA，PLSDA，OPLSDA以及机器学习这样的分析，如果不进行代谢物的标准化，那么均值和标准差高的代谢物的重要性将会倾向于高于均值标准低的代谢物的重要性，而这样的结果显然不是我们想要的结果，在分组间差异大的才应该是重要性高的。如图3-3所示，在标准化前，代谢物含量的中位数和上下四分位点参差不齐，差异较大，但标准化后，基本都在同一个水平上了。此外，T检验以及ANOVA这样的差异比较方法，都要求代谢物含量服从正态分布，因此，我们一般用log转化，使得代谢物含量分布接近正态分布。
+				代谢物标准化的目的是使得所有代谢物的均值和标准差（或者说中位数，四分位点，scale）在同一个水平上。PCA，PLSDA，OPLSDA以及机器学习这样的分析，如果不进行代谢物的标准化，那么均值和标准差高的代谢物的重要性将会倾向于高于均值标准低的代谢物的重要性，而这样的结果显然不是我们想要的结果，在分组间差异大的才应该是重要性高的。如{{od4}}所示，在标准化前，代谢物含量的中位数和上下四分位点参差不齐，差异较大，但标准化后，基本都在同一个水平上了。此外，T检验以及ANOVA这样的差异比较方法，都要求代谢物含量服从正态分布，因此，我们一般用log转化，使得代谢物含量分布接近正态分布。
 			</p>
 
 
 			<div class="image-block">
-				<img src="FiguresTablesForReport/图3-3.png">
-				<h6>图3-3 标准化前后各个代谢物的含量分布</h6>
+				<img src="FiguresTablesForReport/图3-4.png">
+				<h6>{{od4}} 标准化前后各个代谢物的含量分布</h6>
 				<p class="image-description">含量分布用箱线图表示，箱线图从左到右分别对应离群点，最小值，下四分位点，中位数，上四分位点，最大值，离群点。左边图为标准化前的分布，右边图为标准化后的分布。</p>
 			</div>
-
-
-
 
 
 			<hr>
@@ -447,27 +442,19 @@
 				<p class="image-description">横坐标是样品名，根据分组顺序排序，同时用不同颜色标注了不同的分组样本。纵坐标表示各个代谢物的百分比含量，从上而下对应代谢物的柱的顺序与图例一致。</p>
 			</div>
 
-
-
-			<p>在所有代谢物中，有的代谢物是在生物体内扮演着特定角色的，比如激素，维生素等。我们将所有代谢物用<a href="https://www.genome.jp/kegg-bin/get_htext?br08001">KEGG数据库br08001</a>进行注释，得到代谢物所扮演的生物学角色，然后统计每个生物学角色的百分比含量，绘制百分比含量堆积柱形图，如图4-2所示。</p>
-
-			<div class="image-block">
-				<img src="FiguresTablesForReport/图4-2.png">
-				<h6>图4-2 扮演生物学角色的代谢物百分比堆积柱形图</h6>
-				<p class="image-description">横坐标是样品名，根据分组顺序排序，同时用不同颜色标注了不同的分组样本。纵坐标表示各个生物学角色的百分比含量。</p>
-			</div>			
+			{{bar_content}}
 
 			<p>结果文件夹中也提供了分组均值的百分比含量堆积柱形图，请老师自行查看结果文件夹。</p>
 
 			<div id="a4.2" class="anchor"></div>
 			<h3>4.2 热图聚类图(<a href="01-ConcentrationSummary/2-Heatmap">01-ConcentrationSummary/2-Heatmap</a>)</h3>
 
-			<p>为了研究不同样品间的相似性，还可以通过对样品进行聚类分析从而构建样品的聚类。选取关注的代谢物（默认选取代谢物含量排名前30），根据样品的代谢物组成，实现样品聚类，以此考察不同样品或者分组间的相似或差异性;也根据代谢物含量在各样本的分布进行聚类，寻找代谢物或样本的聚集规律。如图4-3，如果不同分组的样本聚类到不同位置，说明分组间的这30种代谢物组成结构差异较大。</p>
+			<p>为了研究不同样品间的相似性，还可以通过对样品进行聚类分析从而构建样品的聚类。选取关注的代谢物（默认选取代谢物含量排名前30），根据样品的代谢物组成，实现样品聚类，以此考察不同样品或者分组间的相似或差异性;也根据代谢物含量在各样本的分布进行聚类，寻找代谢物或样本的聚集规律。如{{od5}}，如果不同分组的样本聚类到不同位置，说明分组间的这30种代谢物组成结构差异较大。</p>
 
 			<div class="image-block">
 				<img src="FiguresTablesForReport/图4-3.png">
-				<h6>图4-3 代谢物热图聚类结果</h6>
-				<p class="image-description">纵轴为样品名称信息，同时也包括了分组信息。横轴为代谢物。图中上方的聚类树为代谢物在各样本中分布的相似度聚类，左侧的聚类树为样品聚类树，中间的热图是代谢物含量热图，颜色与代谢物含量（log10(信号强度)）的关系见图右上方的刻度尺。</p>
+				<h6>{{od5}} 代谢物热图聚类结果</h6>
+				<p class="image-description">纵轴为样品名称信息，同时也包括了分组信息。横轴为代谢物。图中上方的聚类树为代谢物在各样本中分布的相似度聚类，左侧的聚类树为样品聚类树，中间的热图是代谢物含量热图，颜色与代谢物含量（Z-Score）的关系见图右上方的刻度尺。</p>
 			</div>
 
 			<p>结果文件夹中也有不聚类根据样品分组顺序排序的热图，请老师自行查看结果文件夹。</p>
@@ -514,14 +501,14 @@
 			</div>
 
 
-			<p>有时只看图6-1来判断PLS-DA模型的区分效果（预测能力），不具有说服力。这时候我们可以运用置换检验（Permutation Test）的方法，先构造置换检验统计量（Q2，这个统计量通常能衡量模型的预测能力），用置换的方法来求检验统计量的分布（这个分布是随机分布，由随机因素形成的），把样本实际观测到的检验统计量与检验统计量分布进行比较，判断我们的PLS-DA判别模型的判别效果是否是完全随机因素导致的。如图6-2，如果观测检验统计量在随机分布之外，p值小于0.05，说明我们的PLS-DA判别模型显著，判别效果显著，可以显著区分不同的分组，也即分组间应存在显著差异的代谢物。</p>
+			<p>有时只看图6-1来判断PLS-DA模型的区分效果（预测能力），不具有说服力。这时候我们可以运用置换检验（Permutation Test）的方法，先构造置换检验统计量（这个统计量通常能衡量模型的预测能力），用置换的方法来求检验统计量的分布（这个分布是随机分布，由随机因素形成的），把样本实际观测到的检验统计量与检验统计量分布进行比较，判断我们的PLS-DA判别模型的判别效果是否是完全随机因素导致的。如图6-2，PLSDA的置换检验选择预测准确度（prediction accuracy）作为检验统计量，如果观测检验统计量在随机分布右侧（观测值明显大于随机值），p值小于0.05，说明我们的PLS-DA判别模型显著，判别效果显著，可以显著区分不同的分组，也即分组间应存在显著差异的代谢物。</p>
 
 
 
 			<div class="image-block">
 				<img src="FiguresTablesForReport/图6-2.png">
 				<h6>图6-2 PLS-DA置换检验的检验统计量分布以及p值</h6>
-				<p class="image-description">横坐标表示置换检验检验统计量的分布区间，纵坐标是置换过程中该区间的检验统计量的出现频次，箭头所指位置是实际观测到的检验统计量值，如果这个值离随机分布较远，说明模型区分效果不是随机的，模型区分效果显著。</p>
+				<p class="image-description">横坐标表示置换检验检验统计量（模型预测准确度）的分布区间，纵坐标是置换过程中该区间的检验统计量的出现频次，箭头所指位置是实际观测到的检验统计量值，如果这个值离随机分布较远，说明模型区分效果不是随机的，模型区分效果显著。</p>
 			</div>
 
 
@@ -545,14 +532,13 @@
 
 			<p>OPLSDA点云图和OPLSDA代谢物重要性图与PLS-DA相似，请参照<a href="#a6.1">PLS-DA部分</a>进行解读</p>
 
-			<p>在OPLSDA的置换检验中，我们分别用R2Y和Q2作为检验统计量，用置换的方法求得R2Y和Q2的随机分布，如图6-4，红色的频数分布图是Q2的分布，蓝色的频数分布图是R2Y的分布。如果箭头所指的实际观测Q2和R2Y在随机分布之外，说明Q2和R2Y不是随机的，是显著的，模型的预测能力显著，也即分组间应该存在显著差异的代谢物。</p>
-
+			<p>在OPLSDA的置换检验中，我们用Q2作为检验统计量，用置换的方法求得Q2的随机分布。如图6-4，如果箭头所指的实际观测Q2在随机分布右侧（观测值明显大于随机值），说明Q2不是随机的，是显著的，模型的预测能力显著，也即分组间应该存在显著差异的代谢物。</p>
 
 
 			<div class="image-block">
 				<img src="FiguresTablesForReport/图6-4.png">
-				<h6>图6-4 PLS-DA置换检验的检验统计量分布以及p值</h6>
-				<p class="image-description">红色的频数分布图是Q2的置换随机分布，蓝色的频数分布图是R2Y的置换随机分布，箭头所指的是实际观测的模型Q2和R2Y。</p>
+				<h6>图6-4 OPLS-DA置换检验的检验统计量（Q2）分布以及p值</h6>
+				<p class="image-description">分布图是Q2的置换随机分布，箭头所指的是实际观测的模型Q2。</p>
 			</div>
 
 
@@ -560,7 +546,7 @@
 			<hr>
 			<div id="a7" class="anchor"></div>
 			<h2>
-				七 倍数变化火山图（<a href="05-FoldChange">05-FoldChange目录</a>）
+				七 单变量分析（<a href="05-UnivariateAnalysis">05-UnivariateAnalysis目录</a>）
 			</h2>
 
 			<p>某些情况下，我们不仅想知道代谢物在分组间是否发生了变化（差异是否显著），同时也想知道这个变化有多大，以此来评估代谢物变化会给生物体造成多大的影响。我们可以通过计算代谢物变化的倍数（Fold Change, FC）来衡量这个变化的大小，结合p值，来筛选一些重点关注的代谢物。默认情况下，我们会将分组名按字母数字顺序排在前面的分组作为参照，计算另一个分组的均值和参照组的均值的变化倍数，上调变化倍数为正，下调倍数为负。如图7-1，黄色区域的代谢物是p小于0.05，同时变化倍数绝对值大于2的代谢物，这些代谢物在分组间差异显著，且变化较大，应该重点关注。</p>			
@@ -571,7 +557,13 @@
 				<p class="image-description">每个点代表一个代谢物，横坐标为变化倍数，纵坐标为T检验p值，变化倍数越大，p值越小（log10(p)越高），点越大。</p>
 			</div>
 
+			<p>为了直观地展示代谢物在组之间的差异,我们对单维统计分析获得的排名靠前(P值较小的前25)的代表性的差异代谢物的作箱式图,如下图7-2所示。</p>
 
+			<div class="image-block">
+				<img src="FiguresTablesForReport/图7-2.png">
+				<h6>图7-2 代谢物差异箱式图</h6>
+				<p class="image-description"> *,**,***分别对应p<0.05, p<0.01, p<0.001 </p>
+			</div>
 
 			<hr>
 			<div id="a8" class="anchor"></div>
@@ -649,71 +641,23 @@
 			</div>
 
 
-
 			<hr>
 			<div id="a9" class="anchor"></div>
-			<h2>九 代谢通路分析（<a href="08-PathwayTopoEnrichment">08-PathwayTopoEnrichment目录</a>）</h2>
-
-			<div id="a9.1" class="anchor"></div>
-			<h3>9.1 富集分析</h3>
-			<p>富集分析的目的寻找在某个生物学过程中起关键作用的生物通路, 从而揭示和理解生物学过程的基本分子机制。对于代谢组数据，在富集分析之前，我们需要挑选一些重点关注的代谢物，通常是那些在分组间有显著差异（T检验，p<0.05）的代谢物，再看这些代谢物都在哪些代谢通（KEGG物种特异性代谢通路，不同物种的代谢通路略有区别）路中出现，通过计算这些代谢通路的ORA（Over-Representation Analysis，过表达分析）p值，从而判断关注的代谢物（显著差异的代谢物）是否在这些代谢通路中显著富集。图9-1中显示了差异代谢物显著富集的代谢通路。这些代谢通路可能在所研究的生物学过程中有重要意义。</p>
+			<h2>九 相关分析（<a href="08-CorrelationAnalysis">08-CorrelationAnalysis目录</a>）</h2>
+			<p>通过对比每一个组的代谢物相关性分析谱图，我们可以观察代谢物的相关性在不同组间是否有变化。因为在病理条件下，某些代谢物之间的相关性可能会改变，如从正相关变为不相关或负相关。这将会提示我们关注在这些代谢物所在的通路。我们提供了单个分组以及所有分组一起的pearson相关分析结果的表格，聚类和不聚类的热图，如图9-1是所有分组一起的聚类的相关性热图。</p>
 
 
 			<div class="image-block">
 				<img src="FiguresTablesForReport/图9-1.png">
-				<h6>图9-1 ORA富集分析</h6>
-				<p class="image-description">横坐标为富集倍数，它是代谢通路中， 观测代谢物数/理论代谢物数。p值的大小用颜色表示，颜色越深，p值越小。 </p>
-			</div>
-
-
-			<div id="a9.2" class="anchor"></div>
-			<h3>9.2 拓扑分析</h3>
-
-			<p>即便关注的代谢物在某个通路中显著富集，我们仍然不知道这些代谢物在这个代谢通路中是否起到关键作用，代谢物对代谢通路究竟有多大影响（Impact）。拓扑分析能够计算关注的代谢物在代谢通路中的作用大小（用Impact衡量）。例如，如果代谢通路中，一个代谢物下游没有其他任何代谢物或基因，那么我们可以判断这个代谢物对代谢通路的影响基本为零。相反，如果一个代谢物非常靠近上游，且下游有很多其他代谢物和基因，那么这个代谢物对代谢通路的影响一定很大。我们通常将拓扑分析和富集分析结合起来，从而判断一个代谢通路是否在所研究的生物学过程中起到关键作用。图9-2中蓝色区域的代谢通路是ORA富集分析中显著的代谢通路，纵坐标展示了这些代谢通路在拓扑分析中的Impact。</p>
-
-
-			<div class="image-block">
-				<img src="FiguresTablesForReport/图9-2.png">
-				<h6>图9-2 ORA富集分析和拓扑分析</h6>
-				<p class="image-description">横坐标为ORA分析p值，蓝色区域是显著的（p<0.05）；纵坐标为拓扑分析Impact。 </p>
-			</div>
-
-			<div id="a9.3" class="anchor"></div>
-			<h3>9.3 代谢通路图</h3>
-			<p>代谢通路图能够比较直观的反映代谢物的上下游关系，作用模式，以及代谢通路的拓扑结构，同时能找到与代谢物关联的基因。图9-3是只包含代谢物的代谢通路，红色代谢物是关注的代谢物，即在分组间有显著差异的代谢物。图9-4是同时包含代谢物和基因的代谢通路（KEGG完整的代谢通路），有颜色的代谢物是在分组间有显著差异的代谢物，颜色对应分组，表示在对应分组中代谢物含量较高（相对其它分组）。</p>
-
-
-			<div class="image-block">
-				<img src="FiguresTablesForReport/图9-3.png">
-				<h6>图9-3 只包含代谢物的代谢通路</h6>
-				<p class="image-description">红色代谢物是在分组间有显著差异的代谢物。 </p>
-			</div>
-
-			<div class="image-block">
-				<img src="FiguresTablesForReport/图9-4.png">
-				<h6>图9-4 代谢物和基因的代谢通路</h6>
-				<p class="image-description">有颜色的代谢物是在分组间有显著差异的代谢物，颜色对应分组，表示在对应分组中代谢物含量较高（相对其它分组）。 </p>
-			</div>
-
-
-			<hr>
-			<div id="a10" class="anchor"></div>
-			<h2>十 相关分析（<a href="09-CorrelationAnalysis">09-CorrelationAnalysis目录</a>）</h2>
-			<p>通过对比每一个组的代谢物相关性分析谱图，我们可以观察代谢物的相关性在不同组间是否有变化。因为在病理条件下，某些代谢物之间的相关性可能会改变，如从正相关变为不相关或负相关。这将会提示我们关注在这些代谢物所在的通路。我们提供了单个分组以及所有分组一起的pearson相关分析结果的表格，聚类和不聚类的热图，如图10-1是所有分组一起的聚类的相关性热图。</p>
-
-
-			<div class="image-block">
-				<img src="FiguresTablesForReport/图10-1.png">
-				<h6>图10-1 Pearson相关性热图</h6>
+				<h6>图9-1 Pearson相关性热图</h6>
 				<p class="image-description">代谢物的相关系数矩阵，相关系数由颜色表示，红色正相关，绿色负相关。</p>
 			</div>
 
-
-
+			{{pathway_content}}
 
 			<hr>
 			<div id="a11" class="anchor"></div>
-			<h2><a id="a11"></a>十一 参考文献</h2>
+			<h2><a id="a11"></a>{{od1}} 参考文献</h2>
 			<p>
 				[1] Jasmine C , Jianguo X , Oliver S . MetaboAnalystR: an R package for flexible and reproducible analysis of metabolomics data[J]. Bioinformatics, 2018.<br>
 				[2] Westerhuis J A , Velzen E J J V , Hoefsloot H C J , et al. Multivariate paired data analysis: multilevel PLSDA versus OPLSDA[J]. Metabolomics, 2010, 6(1):119-128.<br>
@@ -721,7 +665,7 @@
 
 			<hr>
 			<div id="a12" class="anchor"></div>
-			<h2><a id="a12"></a>十二 交付结果目录结构 </h2>
+			<h2><a id="a12"></a>{{od2}} 交付结果目录结构 </h2>
 			<p>交付数据分为若干个子目录。 </p>
 			<p>
 				<strong>|ResultsMetabonome/  [主要的结果文件]</strong><br>
@@ -730,18 +674,18 @@
 				|-- 02-PCA / [PCA分析结果]<br>
 				|-- 03-PLSDA / [PLSDA分析结果]<br>
 				|-- 04-OPLSDA / [OPLSDA分析结果]<br>
-				|-- 05-FoldChange / [倍数变化火山图]<br>
+				|-- 05-UnivariateAnalysis / [单变量分析]<br>
 				|-- 06-RandomForest / [随机森林分析结果]<br>
 				|-- 07-SupportVectorMachine / [支持向量机]<br>
-				|-- 08-PathwayTopoEnrichment / [通路分析结果，富集分析，拓扑分析]<br>
-				|-- 09-CorrelationAnalysis / [相关分析结果]<br>
+				|-- 08-CorrelationAnalysis / [相关分析结果]<br>
+				|-- 09-PathwayTopoEnrichment / [通路分析结果，富集分析，拓扑分析]（非靶向限定）<br>				
 				|-- FiguresTablesForReport / [本报告的图表文件夹]<br>
 				|-- 结题报告.html / [结题报告]<br>
 			</p>
 
 			<hr>
 			<div id="a13" class="anchor"></div>
-			<h2><a id="a13"></a>十三 联系我们</h2>
+			<h2><a id="a13"></a>{{od3}} 联系我们</h2>
 			<p>
 				地址：广东省深圳市南山区南海大道3688号 <br>
 				邮编：518060<br>
