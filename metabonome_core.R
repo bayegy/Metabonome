@@ -406,7 +406,7 @@ groupCenter<-function(table, method="mean", check.names=TRUE){
   df<-data.frame(df, check.names = FALSE)
   df["Which-Max"]<-colnames_cp[apply(df, 1, which.max)]
   if(check.names){
-    for(m in c("\\(", "\\)", "\\+")){
+    for(m in c("\\(", "\\)", "\\+", "\\[", "\\]")){
       rownames(df) <- str_replace_all(rownames(df), m, "")
     }
   }
@@ -424,7 +424,9 @@ Volcano <- function(table, out_dir="./", cmpType=0, colors=NA){
       # mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2)
       # mSet<-FC.Anal.unpaired(mSetObj = mSet)
       mSet<-Volcano.Anal(mSet, threshp = 2, fcthresh = 1, cmpType = cmpType, equal.var = F)
-      # browser()
+      print("################################################check the following compounds names if error occured")
+      dif_name <- rownames(gp_mean)[!rownames(gp_mean)%in%rownames(mSet$analSet$volcano$sig.mat)]
+      print(dif_name)
       imp <- reduce(list(mSet$analSet$volcano$sig.mat, gp_mean), rownames_join)
       write.csv(imp, "Volcano_features_significance.csv")
       mSet<-Volcano.Anal(mSet, threshp = 0.05, fcthresh = 2, cmpType = cmpType)
@@ -721,7 +723,7 @@ network_map <- function(table, out_dir, threshp = 0.5, organism="hsa", paired=TR
 }
 
 
-pathway_analysis <- function(table, out_dir, threshp = 0.05, organism="hsa"){
+pathway_analysis <- function(table="/home/cheng/pipelines/testdir/testbono/human_cachexia.csv", out_dir="./", threshp = 0.05, organism="rno"){
   # table <- normalizePath(table)
   mSet<-prepare(table);
   prepare_out_dir(out_dir);
@@ -738,7 +740,7 @@ pathway_analysis <- function(table, out_dir, threshp = 0.05, organism="hsa"){
       write.csv(imp, file = "t_test.csv")
       file.rename("t_test.csv", "selected_compounds.csv")
       write("######################Perform topo and enrichment analysis", stdout())
-      require_db(c("hsa/hsa.rda", "compound_db.rds", "syn_nms.rds"))
+      require_db(c(sprintf("%s/%s.rda", organism, organism), "compound_db.rds", "syn_nms.rds"))
       mSet<-InitDataObjects("conc", "pathora", FALSE)
       mSet<-Setup.MapData(mSet, tmp.vec);
       mSet<-CrossReferencing(mSet, "kegg");
@@ -951,18 +953,30 @@ abundance_heatmap <- function(table, out_dir="./", by_group_mean=FALSE, num=30, 
 
 
 
-group_cor_heatmap <- function(table, out_dir="./", prefix="", cluster = FALSE, show_names=FALSE){
+group_cor_heatmap <- function(table, out_dir="./", prefix="", show_names=FALSE){
   prepare_out_dir(out_dir);
-  mSet<-tryCatch(
+  tryCatch(
     {
       cor.mat <- corr.test(table, method ="pearson", adjust="fdr")
-      pdf(paste(prefix,"pearson_cor_heatmap.pdf",sep = ""), height=10, width=11)
-      pheatmap(cor.mat$r, show_rownames = show_names,  show_colnames = show_names,
-               color = colorRampPalette(colors = c("green", "#555555", "red"))(100),
-               border_color = NA,
-               cluster_rows=cluster, clustering_distance_rows="euclidean",
-               cluster_cols=cluster, clustering_distance_cols="euclidean")
-      dev.off()
+      # browser()
+      r_mat <- cor.mat$r
+      r_mat <- r_mat[, !colSums(is.na(r_mat))==nrow(r_mat)]
+      r_mat <- r_mat[!colSums(is.na(t(r_mat)))==ncol(r_mat), ]
+      plot_heatmap <- function(cluster,fix=""){
+        pdf(paste(prefix, fix, "pearson_cor_heatmap.pdf", sep = ""), height=10, width=11)
+        tryCatch({
+          pheatmap(r_mat, show_rownames = show_names,  show_colnames = show_names,
+                   color = colorRampPalette(colors = c("green", "#555555", "red"))(100),
+                   border_color = NA,
+                   cluster_rows=cluster, clustering_distance_rows="euclidean",
+                   cluster_cols=cluster, clustering_distance_cols="euclidean")
+        }, 
+        error=function(e){print(e)},
+        finally={dev.off()})
+      }
+      # browser()
+      plot_heatmap(cluster = T, fix = "clustered_")
+      plot_heatmap(cluster = F)
       write.table(cor.mat$r,"pearson_cor_matrix.txt", sep="\t", col.names=NA)
       write.table(cor.mat$p,"fdr_adjusted_p_value_matrix.txt", sep="\t", col.names=NA)
     },
@@ -982,7 +996,7 @@ sig_boxplot <- function(table="/home/cheng/pipelines/testdir/testbono/human_cach
   # table <- normalizePath(table)
   mSet<-prepare(table);
   prepare_out_dir(out_dir);
-  mSet<-tryCatch(
+  tryCatch(
     {
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
       # mSet<-Volcano.Anal(mSet, threshp = threshp, fcthresh = 1.2, cmpType = cmpType)
@@ -991,37 +1005,44 @@ sig_boxplot <- function(table="/home/cheng/pipelines/testdir/testbono/human_cach
       imp <- mSet$analSet$tt$sig.mat
       # browser()
       imp <- imp[imp[, 2]<=threshp, ]
-      imp <- imp[order(imp[, 2]), ]
-      tmp.vec <- head(rownames(imp), top)
-      actual_num <- length(tmp.vec)
-      datmat <- data.frame(Category=mSet$dataSet$cls, mSet$dataSet$norm[, tmp.vec])
-      df <- melt(datmat, id.vars = "Category")
-      groups <- unique(datmat[, 1])
-      len_g <- length(groups)
-      if(pair_wise|len_g==2){
-        method <- "t.test"
+      if(nrow(imp)>0){
+        imp <- imp[order(imp[, 2]), ]
+        sig_features <- rownames(imp)
+        tmp.vec <- head(sig_features, top)
+        actual_num <- length(tmp.vec)
+        datmat <- data.frame(Category=mSet$dataSet$cls, mSet$dataSet$norm[, tmp.vec])
+        df <- melt(datmat, id.vars = "Category")
+        groups <- unique(datmat[, 1])
+        len_g <- length(groups)
+        if(pair_wise|len_g==2){
+          method <- "t.test"
+        }else{
+          method <- "anova"
+        }
+        remove_files(c("t_test","anova"))
+        num_col <- ceiling(sqrt(actual_num))
+        num_row <- ceiling(actual_num/num_col)
+        p <- ggplot(data = df, mapping = aes(x=Category, y=value, fill=Category)) + geom_boxplot() + theme_bw() +
+          stat_compare_means(mapping = aes(group=Category), comparisons = choose(pair_wise, my_comb(groups, 2), NULL),
+                             label = "p.signif", label.x = (1+len_g)/2, method = method)+
+          facet_wrap(facets = "variable", ncol = num_col) + 
+          scale_fill_manual(values = or(colors, rainbow(len_g))) +
+          theme(legend.position = "none") +
+          labs(x="", y="")
+        wd <- num_col * 3
+        ht <- num_row * 3.5
+        ggsave(filename = "Significant_features_boxplot.pdf", plot = p, width = or(width, wd), height = or(height, ht))
       }else{
-        method <- "anova"
+        sig_features <- NULL
       }
-      remove_files(c("t_test","anova"))
-      num_col <- ceiling(sqrt(actual_num))
-      num_row <- ceiling(actual_num/num_col)
-      p <- ggplot(data = df, mapping = aes(x=Category, y=value, fill=Category)) + geom_boxplot() + theme_bw() +
-        stat_compare_means(mapping = aes(group=Category), comparisons = choose(pair_wise, my_comb(groups, 2), NULL),
-                           label = "p.signif", label.x = (1+len_g)/2, method = method)+
-        facet_wrap(facets = "variable", ncol = num_col) + 
-        scale_fill_manual(values = or(colors, rainbow(len_g))) +
-        theme(legend.position = "none") +
-        labs(x="", y="")
-     wd <- num_col * 3
-     ht <- num_row * 3.5
-     ggsave(filename = "Significant_features_boxplot.pdf", plot = p, width = or(width, wd), height = or(height, ht))
     },
     error=function(e){
       print(e);
+      sig_features <- NULL
     },
     finally={setwd(PWD)}
   )
+  return(sig_features)
 }
 
 
@@ -1044,13 +1065,13 @@ elipse_pca <- function(table="/home/cheng/pipelines/testdir/testbono/human_cache
             labs(x=xylab[1], y=xylab[2])+
             # geom_abline(data = data.frame(slope=c(0,91), intercept=c(0,0)), mapping = aes(slope=slope, intercept=intercept), size=0.1)+
             geom_hline(yintercept = 0, size=0.1) + geom_vline(xintercept = 0, size=0.1) +
-            scale_x_continuous(limits = c(-3, 3)) + scale_y_continuous(limits = c(-3, 3))+
+            # scale_x_continuous(limits = c(-3, 3)) + scale_y_continuous(limits = c(-3, 3))+
             geom_point(size=4, mapping = aes(color= mSet$dataSet$cls))+
             geom_text_repel(label=label, size=2) +
             scale_color_manual(values = or(colors, rainbow(len_g))) +
             stat_ellipse(level = 0.95, type = "norm", size=0.1, segments = 300)+
             theme(legend.title = element_text(size = 0), text = element_text(size = 6))
-          browser()
+          # browser()
           ggsave(plot=p, file=file_biplot, width=5, height=4.3)
         }
         if(!is.na(file_pc1)){
@@ -1070,7 +1091,7 @@ elipse_pca <- function(table="/home/cheng/pipelines/testdir/testbono/human_cache
             geom_hline(linetype=ltype, color=col, yintercept=intercept_y) +
             geom_text(data = text_data, mapping = aes(x=x,y=y,label=lab), size=2) +
             theme_classic2() +
-            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1),
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
                   text = element_text(size = 9))
           w1 <- length(pc1) * 0.1 + 4
           w1 <- ifelse(w1>=50, 50, w1)

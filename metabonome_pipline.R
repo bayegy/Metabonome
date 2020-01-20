@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 library(optparse)
-
+library(purrr)
 #######arguments
 option_list <- list( 
     make_option(c("-i", "--input"),metavar="path", dest="cpd",help="Specify the path of metabolites abundance table. Required",default=NULL),
@@ -21,6 +21,7 @@ library("RColorBrewer")
 library("statTarget")
 library("getopt")
 library("stringr")
+library("VennDiagram")
 # library("ggbiplot")
 
 #####arguments
@@ -37,20 +38,23 @@ base_dir<-normalizePath(dirname(get_Rscript_filename()))
 source(paste(base_dir, "metabonome_core.R", sep = "/"))
 pcas <- opt$pca
 input_type <- opt$type
+
+
 #TEST 
-#setwd("/media/cheng/832f9189-c675-44d9-a7df-65dec23411da/Metabonome_Projects/peng")
-#query_type = "kegg_id"
-#out_dir = "./" # "/home/cheng/pipelines/testdir/cpd_pipline"
-#db_dir = "/home/cheng/Databases/Metabonome_database/database"
-#cpd_file = "cpd_table.csv" # "/home/cheng/pipelines/testdir/cpd_pipline/compound_abundance.csv"
-#metadata_file = NULL # "/home/cheng/pipelines/testdir/cpd_pipline/metadata.csv"
-#run_qc <- !is.null(metadata_file)
-#map_file = "mapping_file.csv" # "/home/cheng/pipelines/testdir/cpd_pipline/mapping_file.txt"
-#categories = "Category"
-#organism = "hsa"
-#base_dir<-"/home/cheng/pipelines/Metabonome/"
-#source(paste(base_dir, "metabonome_core.R", sep = "/"))
-#pcas <- "QC-neg.csv,QC-pos.csv"
+# setwd("/media/cheng/disk1/Metabonome_Projects/cheli")
+# query_type = "kegg_id"
+# out_dir = "results" # "/home/cheng/pipelines/testdir/cpd_pipline"
+# db_dir = "/home/cheng/Databases/Metabonome_database/database"
+# cpd_file = "msms.csv" # "/home/cheng/pipelines/testdir/cpd_pipline/compound_abundance.csv"
+# metadata_file = NULL # "/home/cheng/pipelines/testdir/cpd_pipline/metadata.csv"
+# run_qc <- !is.null(metadata_file)
+# map_file = "map.csv" # "/home/cheng/pipelines/testdir/cpd_pipline/mapping_file.txt"
+# categories = "Category"
+# organism = "rno"
+# base_dir<-"/home/cheng/pipelines/Metabonome/"
+# source(paste(base_dir, "metabonome_core.R", sep = "/"))
+# pcas <- "data/metabolome_neg.csv,data/metabolome_pos.csv"
+# input_type <- "untarget"
 
 #####arguments check
 if(!dir.exists(out_dir)){
@@ -78,6 +82,11 @@ set_db_location(db_dir)
 write("#####################Read Table", stdout())
 # cpd_table <- read.table(cpd_file, sep = "\t", header = T, row.names = 1, stringsAsFactors = FALSE)
 mapping_table <- read.csv(map_file, header = T, row.names = 1, stringsAsFactors = FALSE)
+sample_id_map <- c()
+actual_samid <- mapping_table[, ncol(mapping_table)]
+sample_id_map[rownames(mapping_table)] <- actual_samid
+rownames(mapping_table) <- actual_samid
+
 
 
 write("#####################Color Assignment", stdout())
@@ -87,7 +96,7 @@ all_groups <- unique(group_df[,ncol(group_df)])
 all_groups <- sort(all_groups)
 group_colors <- pallet[1:length(all_groups)]
 names(group_colors) <- all_groups
-ordered_samples <- rownames(mapping_table)[order(mapping_table["Order"][, 1])]
+ordered_samples <- rownames(mapping_table)[order(mapping_table["order"][, 1])]
 
 
 yield_combine <- function(vec){
@@ -143,7 +152,7 @@ data_factory <- function(category="Category", cpd_label = "name", type = "pair",
     cmpType <- choose(length(cmpType)==1, rep(cmpType, nums), cmpType)
     for(i in 1:nums){
       ele_groups <- paired_groups[[i]]
-      ele_name <- reduce(ele_groups, paste, sep="_")
+      ele_name <- reduce(ele_groups, paste, sep=".vs.")
       ele_is_paired <- length(ele_groups)==2
       ele_cmpType <- cmpType[i]
       ele_data <- base_df[base_df[,2]%in%ele_groups, ]
@@ -189,6 +198,8 @@ for(category in categories){
       cpd_df <- data.frame(name=cpd_names, ref_df, cpd_table, check.names=FALSE)
     }else{
       cpd_table <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
+      sample_index <- colnames(cpd_table)%in%names(sample_id_map)
+      colnames(cpd_table)[sample_index] <- sample_id_map[colnames(cpd_table)[sample_index]]
       cpds <- cpd_table[, 1] # First column is keggid
       ref_df <- cross_reference(cpds, type="kegg_id")
       # Second column is metabolite name
@@ -207,7 +218,7 @@ for(category in categories){
   rownames(cpd_df) <- cpd_df[, 1]
   write("#####################QC plot", stdout())
   moveto_dir(paste(category, "/00-DataProcess/01-QA_QC", sep = "/"))
-  if(!is.null(pca_files)){
+  if(length(pca_files)>0){
     for(pca_file in  pca_files){
       pca_df <- read.csv(pca_file, header=TRUE,  row.names=1, check.names=FALSE, stringsAsFactors=FALSE)
       pca_df <- t(pca_df)
@@ -248,6 +259,7 @@ for(category in categories){
   }
   datas <- data_factory(category = category, fix_columns=fix_columns)
   report_group <- datas[[1]]$name
+  sig_features_set <- list()
   for(data in datas){
     write("#####################ConcentrationSummary", stdout())
     moveto_dir(paste(category, "01-ConcentrationSummary/1-Barplot", data$name, sep = "/"))
@@ -274,9 +286,17 @@ for(category in categories){
     write("#####################UnivariateAnalysis Analysis", stdout())
     moveto_dir(paste(category, "05-UnivariateAnalysis", data$name, sep = "/"))
     if(data$paired){
+      print("Paired data, plot valcano")
       Volcano(data$data, colors = data$colors, cmpType = data$cmpType)
+      sig_features <- sig_boxplot(table = data$data, colors = data$colors)
+      # print(sig_features)
+      if(length(sig_features)>0){
+        sig_features_set[[data$name]] <- sig_features
+      }
+    }else{
+      sig_features <- sig_boxplot(table = data$data, colors = data$colors)
     }
-    sig_boxplot(table = data$data, colors = data$colors)
+    
     
     write("#####################RandomForest Analysis", stdout())
     moveto_dir(paste(category, "06-RandomForest", sep = "/"))
@@ -288,6 +308,24 @@ for(category in categories){
       SVM(data$data, out_dir = data$name)
     }
   }
+  
+  
+  write("#####################Venn Plot ", stdout())
+  # if(length(sig_features_set)>1){
+  #   moveto_dir(paste(category, "05-UnivariateAnalysis", sep = "/"))
+  #   vs_combs <- yield_combine(names(sig_features_set))
+  #   for (comb in vs_combs) {
+  #     if(length(comb)<6){
+  #       file_base <- reduce(comb, paste, sep="_and_")
+  #       venn.diagram(sig_features_set[comb],
+  #                    filename =paste(file_base, "_venn.tiff", sep = ""),
+  #                    imagetype="tiff",alpha= 0.50,lwd =1.2,cat.cex=1.4,
+  #                    fill=rainbow(length(comb)),
+  #                    margin=0.15)
+  #     }
+  #   }
+  #   system("rm *.log")
+  # }
   
   if(input_type=="untarget"){
     datas <- data_factory(category = category, cpd_label = "kegg_id", fix_columns=fix_columns)
@@ -323,16 +361,17 @@ for(category in categories){
   show_label <- !input_type=="untarget"
   datas <- data_factory(category = category, type = "single", fix_columns=fix_columns)
   for (data in datas) {
+    # data <- datas[[4]]
     write("#####################Correlation Analysis", stdout())
     moveto_dir(paste(category, "08-CorrelationAnalysis", data$name, sep = "/"))
-    group_cor_heatmap(data$data[, -c(1,2)], cluster = FALSE, show_names = show_label)
-    group_cor_heatmap(data$data[, -c(1,2)], cluster = TRUE, prefix = "clustered_", show_names = show_label)
+    group_cor_heatmap(data$data[, -c(1,2)], show_names = show_label)
+    # group_cor_heatmap(data$data[, -c(1,2)], cluster = TRUE, prefix = "clustered_", show_names = show_label)
   }
   data <- data_factory(category = category, type = "all", fix_columns=fix_columns)
   data <- data[, -c(1, 2)]
   moveto_dir(paste(category, "08-CorrelationAnalysis", sep = "/"))
-  group_cor_heatmap(data, cluster = FALSE, prefix = "all_group_", show_names = show_label)
-  group_cor_heatmap(data, cluster = TRUE, prefix = "all_group_clustered_", show_names = show_label)
+  group_cor_heatmap(data, prefix = "all_group_", show_names = show_label)
+  # group_cor_heatmap(data, cluster = TRUE, prefix = "all_group_clustered_", show_names = show_label)
   moveto_dir(category)
   system(sprintf("cp -rp %s/FiguresTablesForReport ./", base_dir))
   system("mv FiguresTablesForReport/结题报告.html ./")

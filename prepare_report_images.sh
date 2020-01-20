@@ -17,6 +17,7 @@ cp 03-PLSDA/${report_group}/plsda_features_importance.pdf FiguresTablesForReport
 cp 04-OPLSDA/${report_group}/oplsda_permutation_dpi300.pdf FiguresTablesForReport/图6-4.pdf
 cp 05-UnivariateAnalysis/${report_group}/Volcano_features_importance.pdf FiguresTablesForReport/图7-1.pdf
 cp 05-UnivariateAnalysis/${report_group}/Significant_features_boxplot.pdf FiguresTablesForReport/图7-2.pdf
+cpfirst 05-UnivariateAnalysis/tiff FiguresTablesForReport/图7-3.tiff
 cp 06-RandomForest/${report_group}/RF_performancedpi300.pdf FiguresTablesForReport/图8-1.pdf
 cp 06-RandomForest/${report_group}/RF_features_importancedpi300.pdf FiguresTablesForReport/图8-2.pdf
 cp 07-SupportVectorMachine/${report_group}/svm_accuracy_dpi300.png FiguresTablesForReport/图8-3.png
@@ -30,4 +31,5 @@ cp 08-CorrelationAnalysis/all_group_clustered_pearson_cor_heatmap.pdf FiguresTab
 
 
 cd FiguresTablesForReport/
-if [ -f 图3-1.pdf ];then echo "Converting pdf to png"; for pdfs in *.pdf; do echo $pdfs; base=$(basename $pdfs .pdf); convert  -density 300 -quality 80 $pdfs ${base}.png; rm $pdfs;done;fi;
+echo "Converting pdf to png"; for pdfs in *.pdf; do echo $pdfs; base=$(basename $pdfs .pdf); convert  -density 100 -quality 80 $pdfs ${base}.png; rm $pdfs;done;
+# for pdfs in *.tiff; do echo $pdfs; base=$(basename $pdfs .tiff); convert  -density 100 -quality 80 $pdfs ${base}.png; rm $pdfs;done;
