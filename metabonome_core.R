@@ -799,7 +799,7 @@ abundance_barplot <- function(table, out_dir="./", by_group_mean=FALSE, num=20, 
       label_order<-rownames(table)
       
       otu <- table[, -c(1,2)]
-      if(min(otu)<0){
+      if(min(otu, na.rm = T)<0){
         otu <- otu - min(otu)
       }
 
@@ -882,7 +882,7 @@ abundance_heatmap <- function(table, out_dir="./", by_group_mean=FALSE, num=30, 
       table <- table[order(table[, 2]), ]
       group <- table[2]
       otu <- table[, -c(1,2)]
-      if(min(otu)<0){
+      if(min(otu, na.rm = T)<0){
         otu <- otu - min(otu)
       }
       p1<-max(nchar(colnames(otu)))
@@ -1004,7 +1004,9 @@ sig_boxplot <- function(table="/home/cheng/pipelines/testdir/testbono/human_cach
       mSet <- Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
       imp <- mSet$analSet$tt$sig.mat
       # browser()
+      imp <- data.frame(imp, check.names = F)
       imp <- imp[imp[, 2]<=threshp, ]
+      sig_features <- NULL
       if(nrow(imp)>0){
         imp <- imp[order(imp[, 2]), ]
         sig_features <- rownames(imp)
@@ -1032,13 +1034,10 @@ sig_boxplot <- function(table="/home/cheng/pipelines/testdir/testbono/human_cach
         wd <- num_col * 3
         ht <- num_row * 3.5
         ggsave(filename = "Significant_features_boxplot.pdf", plot = p, width = or(width, wd), height = or(height, ht))
-      }else{
-        sig_features <- NULL
       }
     },
     error=function(e){
       print(e);
-      sig_features <- NULL
     },
     finally={setwd(PWD)}
   )

@@ -140,6 +140,8 @@ select_cpd_df <- function(cpd_label="name", fix_columns = c(1:9)){
 
 data_factory <- function(category="Category", cpd_label = "name", type = "pair", cmpType=1, fix_columns = c(1:9)){
   map_df <- mapping_table[category]
+  # print(map_df)
+  # print(select_cpd_df(cpd_label = cpd_label, fix_columns = fix_columns))
   base_df <- rownames_join(map_df, select_cpd_df(cpd_label = cpd_label, fix_columns = fix_columns))
   # print(base_df)
   base_df <- base_df[order(base_df[,1]), ]
@@ -156,6 +158,8 @@ data_factory <- function(category="Category", cpd_label = "name", type = "pair",
       ele_is_paired <- length(ele_groups)==2
       ele_cmpType <- cmpType[i]
       ele_data <- base_df[base_df[,2]%in%ele_groups, ]
+      # ³ýÈ¥ËùÓÐÖµ¶¼ÊÇNAµÄ»¯ºÏÎï
+      ele_data <- ele_data[, c(T,T,colSums(!is.na(ele_data[,-c(1,2)]))>0)]
       ele_colors <- group_colors[ele_groups]
       out_list[[i]] <- list(data=ele_data, name=ele_name, groups=ele_groups, colors=ele_colors, cmpType=ele_cmpType, paired=ele_is_paired)
     }
@@ -165,7 +169,9 @@ data_factory <- function(category="Category", cpd_label = "name", type = "pair",
       # print("Here !!!!!!!!!!!!!!!!!!!!!!!!!!!")
       groups <- unique(base_df[, 2])
       for (i in 1:length(groups)) {
-        out_list[[i]] <- list(name=groups[i], data=base_df[base_df[, 2]==groups[i], ], colors=group_colors[groups[i]])
+        ele_data = base_df[base_df[, 2]==groups[i], ]
+        ele_data <- ele_data[, c(T,T,colSums(!is.na(ele_data[,-c(1,2)]))>0)]
+        out_list[[i]] <- list(name=groups[i], data=ele_data, colors=group_colors[groups[i]])
       }
     }else{
      out_list <- base_df
@@ -212,8 +218,11 @@ for(category in categories){
     fix_columns <- c(1:9)
   }else{
     cpd_df <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
-    colnames(cpd_df)[1:2]<-c("name", "class")
-    fix_columns <- c(1:2)
+    # colnames(cpd_df)[1:2]<-c("name", "class")
+    # fix_columns <- c(1:2)
+    colnames(cpd_df)[1]<-c("name")
+    fix_columns <- c(1)
+
   }
   rownames(cpd_df) <- cpd_df[, 1]
   write("#####################QC plot", stdout())
@@ -249,14 +258,16 @@ for(category in categories){
   mSet <- PlotNormSummary(mSetObj = mSet, "compound_wise_normlization.pdf", format = "pdf", dpi = 300, width = 30)
   mSet <- PlotSampleNormSummary(mSetObj = mSet, "sample_wise_normlization.pdf", format = "pdf", dpi = 300, width = 30)
   
-  
-  datas <- data_factory(category = category, cpd_label = "class", fix_columns=fix_columns)
-  for(data in datas){
-    write("#####################ConcentrationSummary", stdout())
-    moveto_dir(paste(category, "01-ConcentrationSummary/1-Barplot", data$name, sep = "/"))
-    abundance_barplot(data$data, colors = data$colors, by_group_mean = FALSE, prefix = "Compounds_with_Biological_Roles_")   
-    abundance_barplot(data$data, colors = data$colors, by_group_mean = TRUE, prefix = "Compounds_with_Biological_Roles_group_mean_")
+  if("class" %in% colnames(cpd_df)){
+    datas <- data_factory(category = category, cpd_label = "class", fix_columns=fix_columns)
+    for(data in datas){
+      write("#####################ConcentrationSummary", stdout())
+      moveto_dir(paste(category, "01-ConcentrationSummary/1-Barplot", data$name, sep = "/"))
+      abundance_barplot(data$data, colors = data$colors, by_group_mean = FALSE, prefix = "Compounds_with_Biological_Roles_")   
+      abundance_barplot(data$data, colors = data$colors, by_group_mean = TRUE, prefix = "Compounds_with_Biological_Roles_group_mean_")
+    }
   }
+  
   datas <- data_factory(category = category, fix_columns=fix_columns)
   report_group <- datas[[1]]$name
   sig_features_set <- list()
@@ -375,7 +386,7 @@ for(category in categories){
   moveto_dir(category)
   system(sprintf("cp -rp %s/FiguresTablesForReport ./", base_dir))
   system("mv FiguresTablesForReport/ç»“é¢˜æŠ¥å‘Š.html ./")
-  # system(sprintf("cp 09-PathwayTopoEnrichment/%s/%s_dpi300.pdf FiguresTablesForReport/å›¾9-3.pdf", report_group, str_replace_all(REPORT_PATHWAY, " +", "_")))
+  # system(sprintf("cp 09-PathwayTopoEnrichment/%s/%s_dpi300.pdf FiguresTablesForReport/å›?9-3.pdf", report_group, str_replace_all(REPORT_PATHWAY, " +", "_")))
   system(sprintf("bash %s/prepare_report_images.sh %s", base_dir, report_group))
   system(sprintf("render_report.py ç»“é¢˜æŠ¥å‘Š.html %s", input_type))
   
