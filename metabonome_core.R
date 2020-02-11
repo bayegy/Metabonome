@@ -268,7 +268,8 @@ PCA<-function(table, out_dir, colors=NA){
         {
             UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
             mSet<-PCA.Anal(mSet)
-            mSet<-PlotPCA2DScore(mSet, "pca_score2d_", "pdf", 300, width=30, 1,2,0.95,0,0)
+            mSet<-PlotPCA2DScore(mSet, "pca_score2d_", "pdf", 300, width=30, 1,2,0.95,show=0, grey.scale =0)
+            mSet<-PlotPCA2DScore(mSet, "pca_score2d_with_ids_", "pdf", 300, width=30, 1,2,0.95,show=1, grey.scale =0)
             # mSet<-PlotPCABiplot(mSetObj=mSet, imgName="pca_score_biplot_", format="png", dpi=300, width=30, 1, 2)
             # pca <-  mSet$analSet$pca
             # labels<-paste("PC", c(1, 2, 3), " (", 100*round(pca$variance[c(1, 2, 3)], 3), "%)", sep="")
@@ -300,7 +301,8 @@ PLSDA<-function(table, out_dir, colors=NA){
             )            
             # browser()
             remove_files()
-            mSet<-PlotPLS2DScore(mSet, "plsda_score2d_", "pdf", 300, width=30, 1,2,0.95,0,0)
+            mSet<-PlotPLS2DScore(mSet, "plsda_score2d_", "pdf", 300, width=30, 1,2,0.95,show=0,0)
+            mSet<-PlotPLS2DScore(mSet, "plsda_score2d_with_ids_", "pdf", 300, width=30, 1,2,0.95,show=1,0)
             mSet<-PlotPLS3DScoreImg(mSet,"plsda_score3d_","pdf", 300, 30, 1,2,3, 40)
             # 
             imp<-purrr::reduce(list(mSet$analSet$plsr$loadings[,1:3], mSet$analSet$plsda$vip.mat, mSet$analSet$plsda$coef.mat, mSet$analSet$tt$sig.mat), rownames_join)
@@ -345,7 +347,8 @@ OPLSDA<-function(table, out_dir, colors=NA){
             mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
             mSet<-OPLSR.Anal(mSet, reg=TRUE)
             remove_files()
-            mSet<-PlotOPLS2DScore(mSet, "oplsda_score2d_", "pdf", 300, width=30, 1,2,0.95,0,0)
+            mSet<-PlotOPLS2DScore(mSet, "oplsda_score2d_", "pdf", 300, width=30, 1,2,0.95,show=0,0)
+            mSet<-PlotOPLS2DScore(mSet, "oplsda_score2d_with_ids_", "pdf", 300, width=30, 1,2,0.95,show=1,0)
             # tryCatch(
             #  {
             mSet<-OPLSDA.Permut(mSet, num=100)
@@ -372,27 +375,27 @@ OPLSDA<-function(table, out_dir, colors=NA){
 }
 
 
-RF<-function(table, out_dir, colors=NA){
-  mSet<-prepare(table);
-  prepare_out_dir(out_dir);
-  mSet<-tryCatch(
-    {
-      UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
-      mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
-      mSet<-RF.Anal(mSetObj = mSet)
-      remove_files(c("csv"))
-      imp <- reduce(list(mSet$analSet$rf$importance, mSet$analSet$tt$sig.mat), rownames_join)
-      # imp["-log10(FDR adjusted p)"] <- -log10(imp["FDR"])
-      # plot_volcano(imp, out_img = "RF_features_importance.pdf", axis = c("MeanDecreaseAccuracy","-log10(FDR adjusted p)"))
-      write.csv(imp, "RF_features_importance.csv")
-      mSet<-PlotRF.Classify(mSetObj=mSet, imgName="RF_performance", format="pdf", dpi=300, width=30)
-      mSet<-PlotRF.Outlier(mSetObj=mSet, imgName="RF_outliers", format="pdf", dpi=300, width=30)
-      mSet<-PlotRF.VIP(mSetObj=mSet, imgName="RF_features_importance", format="pdf", dpi=300, width=30)
-    },
-    error=function(e){print(e)},
-    finally={setwd(PWD)}
-  )
-}
+# RF<-function(table, out_dir, colors=NA){
+#   mSet<-prepare(table);
+#   prepare_out_dir(out_dir);
+#   mSet<-tryCatch(
+#     {
+#       UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
+#       mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
+#       mSet<-RF.Anal(mSetObj = mSet)
+#       remove_files(c("csv"))
+#       imp <- reduce(list(mSet$analSet$rf$importance, mSet$analSet$tt$sig.mat), rownames_join)
+#       # imp["-log10(FDR adjusted p)"] <- -log10(imp["FDR"])
+#       # plot_volcano(imp, out_img = "RF_features_importance.pdf", axis = c("MeanDecreaseAccuracy","-log10(FDR adjusted p)"))
+#       write.csv(imp, "RF_features_importance.csv")
+#       mSet<-PlotRF.Classify(mSetObj=mSet, imgName="RF_performance", format="pdf", dpi=300, width=30)
+#       mSet<-PlotRF.Outlier(mSetObj=mSet, imgName="RF_outliers", format="pdf", dpi=300, width=30)
+#       mSet<-PlotRF.VIP(mSetObj=mSet, imgName="RF_features_importance", format="pdf", dpi=300, width=30)
+#     },
+#     error=function(e){print(e)},
+#     finally={setwd(PWD)}
+#   )
+# }
 
 
 groupCenter<-function(table, method="mean", check.names=TRUE){
@@ -454,7 +457,7 @@ RF<-function(table, out_dir){
       # imp["-log10(FDR adjusted p)"] <- -log10(imp["FDR"])
       # plot_volcano(imp, out_img = "RF_features_importance.pdf", axis = c("MeanDecreaseAccuracy","-log10(FDR adjusted p)"))
       write.csv(imp, "RF_features_importance.csv")
-      mSet<-PlotRF.Classify(mSetObj=mSet, imgName="RF_performance", format="pdf", dpi=300, width=30)
+      # mSet<-PlotRF.Classify(mSetObj=mSet, imgName="RF_performance", format="pdf", dpi=300, width=30)
       mSet<-PlotRF.Outlier(mSetObj=mSet, imgName="RF_outliers", format="pdf", dpi=300, width=30)
       mSet<-PlotRF.VIP(mSetObj=mSet, imgName="RF_features_importance", format="pdf", dpi=300, width=30)
     },
@@ -483,7 +486,7 @@ SVM<-function(table, out_dir){
       # Plot predicted class probabilities for each sample for a selected model, not showing labels of wrongly classified samples
       # mSet<-PlotProbView(mSet, imgName = "multi_roc_prob_", format="pdf", dpi=300, width=30, mdl.inx = -1, show = 1, showPred = 0)
       # Plot the predictive accuracy of models with increasing number of features
-      mSet<-PlotAccuracy(mSet, imgName = "svm_accuracy_", format="png", dpi=300)
+      # mSet<-PlotAccuracy(mSet, imgName = "svm_accuracy_", format="png", dpi=300)
       # Plot the most important features of a selected model ranked from most to least important
       mSet<-PlotImpVars(mSet, imgName = "svm_features_importance_", format="png", dpi=300, mdl.inx = -1, measure="mean", feat.num=15)
       remove_files(c("csv"))

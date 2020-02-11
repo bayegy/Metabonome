@@ -184,45 +184,58 @@ for(category in categories){
   # category <- "Category"
   write("#####################Data Prepare", stdout())
   moveto_dir(paste(category, "/00-DataProcess/", sep = "/"))
+  
+  # map
+  cpd_table <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
+  sample_index <- colnames(cpd_table)%in%names(sample_id_map)
+  colnames(cpd_table)[sample_index] <- sample_id_map[colnames(cpd_table)[sample_index]]
+  
   if(input_type=="untarget"){
-    if(run_qc){
-      dir.create("./01-QA_QC")
-      metadata <- read.csv(metadata_file, row.names = 1, check.names = FALSE, stringsAsFactors = FALSE)
-      map_category <- mapping_table[category]
-      metadata <- rownames_join(metadata, map_category)
-      colnames(metadata)[3] <- "class"
-      write.csv(data.frame(sample=rownames(metadata), metadata, check.names = FALSE), file = "metadata.csv", row.names = FALSE)
-      shiftCor("metadata.csv", cpd_file, Frule = 0.8, MLmethod = "QCRFSC", QCspan = 0,imputeM = "KNN", plot = TRUE)
-      cpd_table <- read.csv("statTarget/shiftCor/After_shiftCor/shift_sample_cor.csv", check.names = FALSE, header = T, row.names = 1, stringsAsFactors = FALSE)
-      system("mv statTarget/shiftCor/* ./01-QA_QC")
-      # system("mv statTarget/shiftCor/RSDresult/* 01-QA_QC")
-      system("rm -r statTarget")
-      cpd_table <- t(cpd_table[, -1])
-      cpd_names <-  rownames(cpd_table)
-      ref_df <- cross_reference(cpd_names, type="name")
-      # rownames(ref_df)<-ref_df[,1]
-      cpd_df <- data.frame(name=cpd_names, ref_df, cpd_table, check.names=FALSE)
-    }else{
-      cpd_table <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
-      sample_index <- colnames(cpd_table)%in%names(sample_id_map)
-      colnames(cpd_table)[sample_index] <- sample_id_map[colnames(cpd_table)[sample_index]]
-      cpds <- cpd_table[, 1] # First column is keggid
-      ref_df <- cross_reference(cpds, type="kegg_id")
-      # Second column is metabolite name
-      cpd_df <- data.frame(cpd_table[, 2], ref_df, cpd_table[, -c(1, 2)], check.names=FALSE)
-      colnames(cpd_df)[1] <- "name"
-      # cpd_df["kegg_id"] <- cpds
-    }
+    # if(run_qc){
+    #   dir.create("./01-QA_QC")
+    #   metadata <- read.csv(metadata_file, row.names = 1, check.names = FALSE, stringsAsFactors = FALSE)
+    #   map_category <- mapping_table[category]
+    #   metadata <- rownames_join(metadata, map_category)
+    #   colnames(metadata)[3] <- "class"
+    #   write.csv(data.frame(sample=rownames(metadata), metadata, check.names = FALSE), file = "metadata.csv", row.names = FALSE)
+    #   shiftCor("metadata.csv", cpd_file, Frule = 0.8, MLmethod = "QCRFSC", QCspan = 0,imputeM = "KNN", plot = TRUE)
+    #   cpd_table <- read.csv("statTarget/shiftCor/After_shiftCor/shift_sample_cor.csv", check.names = FALSE, header = T, row.names = 1, stringsAsFactors = FALSE)
+    #   system("mv statTarget/shiftCor/* ./01-QA_QC")
+    #   # system("mv statTarget/shiftCor/RSDresult/* 01-QA_QC")
+    #   system("rm -r statTarget")
+    #   cpd_table <- t(cpd_table[, -1])
+    #   cpd_names <-  rownames(cpd_table)
+    #   ref_df <- cross_reference(cpd_names, type="name")
+    #   # rownames(ref_df)<-ref_df[,1]
+    #   cpd_df <- data.frame(name=cpd_names, ref_df, cpd_table, check.names=FALSE)
+    # }else{
+    cpds <- cpd_table[, 1] # First column is keggid
+    ref_df <- cross_reference(cpds, type="kegg_id")
+    # Second column is metabolite name
+    cpd_df <- data.frame(cpd_table[, 2], ref_df, cpd_table[, -c(1, 2)], check.names=FALSE)
+    colnames(cpd_df)[1] <- "name"
+    # cpd_df["kegg_id"] <- cpds
+    # }
     cpd_df<-cpd_df[, -c(2,3)]
     write.csv(cpd_df, "compound_cross_reference_after_QC.csv", row.names = F)
     fix_columns <- c(1:9)
   }else{
-    cpd_df <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
-    # colnames(cpd_df)[1:2]<-c("name", "class")
-    # fix_columns <- c(1:2)
-    colnames(cpd_df)[1]<-c("name")
-    fix_columns <- c(1)
-
+    if(input_type=="target"){
+      # cpd_df <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
+      cpd_df <- cpd_table
+      # colnames(cpd_df)[1:2]<-c("name", "class")
+      # fix_columns <- c(1:2)
+      colnames(cpd_df)[1]<-c("name")
+      fix_columns <- c(1)
+    }else{
+      cpd_names <- cpd_table[, 1]
+      ref_df <- cross_reference(cpd_names, type="name")
+      cpd_df <- data.frame(cpd_names, ref_df, cpd_table[, -c(1)], check.names=FALSE)
+      colnames(cpd_df)[1] <- "name"
+      cpd_df<-cpd_df[, -c(2,3)]
+      write.csv(cpd_df, "compound_cross_reference_after_QC.csv", row.names = F)
+      fix_columns <- c(1:9)
+    }
   }
   rownames(cpd_df) <- cpd_df[, 1]
   write("#####################QC plot", stdout())
@@ -235,12 +248,15 @@ for(category in categories){
       is_qc <- grepl("QC", sam_gp)
       sam_gp[is_qc] <- "QC"
       sam_gp[!is_qc] <- "Sample"
-      pca.data <- data.frame(Sample=rownames(pca_df), Category=sam_gp, pca_df)
+      pca.data <- data.frame(Sample=sample_id_map[rownames(pca_df)], Category=sam_gp, pca_df)
       rownames(pca.data)<-rownames(pca_df)
       # pdf("")
       file=paste(str_replace(pca_file, "\\.[^\\.]+$", ""), "_PCA_QC.pdf", sep="")
+      file_withid=paste(str_replace(pca_file, "\\.[^\\.]+$", ""), "_PCA_QC_with_ids.pdf", sep="")
       file=str_replace(file, "^.+/", "")
+      file_withid=str_replace(file_withid, "^.+/", "")
       elipse_pca(table = pca.data, file_biplot = file, file_pc1 = NA, label = F)
+      elipse_pca(table = pca.data, file_biplot = file_withid, file_pc1 = NA, label = T)
     }
   }
   write("#####################QA plot", stdout())
@@ -248,7 +264,8 @@ for(category in categories){
   elipse_pca(table = data, file_pc1 = "AllSample_PC1.pdf", file_biplot = NA, sam_order = ordered_samples)
   datas <- data_factory(category = category, type = "single", fix_columns=fix_columns)
   for (data in datas) {
-      elipse_pca(table = data$data, colors = data$colors, file_biplot = paste(data$name, "_PCA_QA.pdf", sep = ""), file_pc1 = NA)
+      elipse_pca(table = data$data, colors = data$colors, file_biplot = paste(data$name, "_PCA_QA.pdf", sep = ""), file_pc1 = NA, label = T)
+      elipse_pca(table = data$data, colors = data$colors, file_biplot = paste(data$name, "_PCA_QA_without_ids.pdf", sep = ""), file_pc1 = NA, label = F)
   }
   
   write("#####################Data Normlization", stdout())

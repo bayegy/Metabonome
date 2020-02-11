@@ -18,9 +18,9 @@ cp 04-OPLSDA/${report_group}/oplsda_permutation_dpi300.pdf FiguresTablesForRepor
 cp 05-UnivariateAnalysis/${report_group}/Volcano_features_importance.pdf FiguresTablesForReport/图7-1.pdf
 cp 05-UnivariateAnalysis/${report_group}/Significant_features_boxplot.pdf FiguresTablesForReport/图7-2.pdf
 cpfirst 05-UnivariateAnalysis/tiff FiguresTablesForReport/图7-3.tiff
-cp 06-RandomForest/${report_group}/RF_performancedpi300.pdf FiguresTablesForReport/图8-1.pdf
+# cp 06-RandomForest/${report_group}/RF_performancedpi300.pdf FiguresTablesForReport/图8-1.pdf
 cp 06-RandomForest/${report_group}/RF_features_importancedpi300.pdf FiguresTablesForReport/图8-2.pdf
-cp 07-SupportVectorMachine/${report_group}/svm_accuracy_dpi300.png FiguresTablesForReport/图8-3.png
+# cp 07-SupportVectorMachine/${report_group}/svm_accuracy_dpi300.png FiguresTablesForReport/图8-3.png
 cp 07-SupportVectorMachine/${report_group}/svm_roc_all_models_dpi300.png FiguresTablesForReport/图8-4.png
 cp 07-SupportVectorMachine/${report_group}/svm_features_importance_dpi300.png FiguresTablesForReport/图8-5.png
 cp 09-PathwayTopoEnrichment/${report_group}/ora_hyper_score_dpi300.pdf FiguresTablesForReport/图10-1.pdf
