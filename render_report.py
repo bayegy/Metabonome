@@ -130,9 +130,9 @@ def render_html(in_fp, out_fp=False, **kwargs):
         f.write(out)
 
 
-if report_type == "untarget":
-    render_html(in_fp=html_path, qc_content=qc_content, pathway_content=pathway_content, proc=exp_untarget,
-                pathway_nav=pathway_nav, bar_content=bar_content, od1="十一", od2="十二", od3="十三", od4="图3-4", od5="图4-3")
-else:
+if report_type == "target":
     render_html(in_fp=html_path, qc_content="", pathway_content="", pathway_nav="", proc=exp_target,
                 bar_content="", od1="十", od2="十一", od3="十二", od4="图3-3", od5="图4-2")
+else:
+    render_html(in_fp=html_path, qc_content=qc_content, pathway_content=pathway_content, proc=exp_untarget,
+                pathway_nav=pathway_nav, bar_content=bar_content, od1="十一", od2="十二", od3="十三", od4="图3-4", od5="图4-3")
