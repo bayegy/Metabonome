@@ -83,8 +83,12 @@ prepare<-function(table, anal.type="stat"){
     mSet<-InitDataObjects("conc", anal.type = anal.type, FALSE)
     ## [1] "MetaboAnalyst R objects initialized ..."
     mSet<-Read.TextData(mSet, table, "row", "disc")
+
     mSet<-SanityCheckData(mSet)
+    #SampleID Category  Description
+
     mSet<-ReplaceMin(mSet);
+
     # mSet<-FilterVariable(mSet, "iqr", "F", 25)
     ## [1] " Further feature filtering based on Interquantile Range"
     mSet<-PreparePrenormData(mSet)
@@ -738,8 +742,11 @@ pathway_analysis <- function(table="/home/cheng/pipelines/testdir/testbono/human
       mSet <- Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
       imp <- mSet$analSet$tt$sig.mat
       # browser()
+
       imp <- imp[imp[, 2]<=threshp, ]
       tmp.vec <- rownames(imp)
+
+      if(is.null(tmp.vec)){return(0)}
       write.csv(imp, file = "t_test.csv")
       file.rename("t_test.csv", "selected_compounds.csv")
       write("######################Perform topo and enrichment analysis", stdout())
@@ -966,7 +973,7 @@ group_cor_heatmap <- function(table, out_dir="./", prefix="", show_names=FALSE){
       r_mat <- r_mat[, !colSums(is.na(r_mat))==nrow(r_mat)]
       r_mat <- r_mat[!colSums(is.na(t(r_mat)))==ncol(r_mat), ]
       plot_heatmap <- function(cluster,fix=""){
-        pdf(paste(prefix, fix, "pearson_cor_heatmap.pdf", sep = ""), height=10, width=11)
+        pdf(paste(prefix, fix, "pearson_cor_heatmap.pdf", sep = ""), height=15, width=16)
         tryCatch({
           pheatmap(r_mat, show_rownames = show_names,  show_colnames = show_names,
                    color = colorRampPalette(colors = c("green", "#555555", "red"))(100),

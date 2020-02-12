@@ -140,12 +140,35 @@ select_cpd_df <- function(cpd_label="name", fix_columns = c(1:9)){
 
 data_factory <- function(category="Category", cpd_label = "name", type = "pair", cmpType=1, fix_columns = c(1:9)){
   map_df <- mapping_table[category]
+  map_df <- na.omit(map_df)
+  #print(map_df)
+  #print(select_cpd_df(cpd_label = cpd_label, fix_columns = fix_columns))
+  sub_cpd_df <- select_cpd_df(cpd_label = cpd_label, fix_columns = fix_columns)
+  map_samples <- rownames(map_df)
+  cpd_samples <- rownames(sub_cpd_df)
+
+  intersect_samples <- intersect(cpd_samples, map_samples)
+
+  print(sprintf("FOR %s:", category))
+  print("Following samples found in mapping file, but not in compound abundance table:")
+  print(map_samples[!map_samples%in%cpd_samples])
+  print("Following samples found in abundance table, but not in compound mapping file:")
+  print(cpd_samples[!cpd_samples%in%map_samples])
+
+  map_df <- map_df[map_samples%in%intersect_samples, ]
+  map_df <- data.frame(map_df, check.names = FALSE, stringsAsFactors = FALSE)
+  colnames(map_df) <- category
+  rownames(map_df) <- map_samples[map_samples%in%intersect_samples]
+
+  sub_cpd_df <- sub_cpd_df[cpd_samples%in%intersect_samples, ]
+
   # print(map_df)
-  # print(select_cpd_df(cpd_label = cpd_label, fix_columns = fix_columns))
-  base_df <- rownames_join(map_df, select_cpd_df(cpd_label = cpd_label, fix_columns = fix_columns))
+  # print(sub_cpd_df)
+
+  base_df <- rownames_join(map_df, sub_cpd_df)
   # print(base_df)
   base_df <- base_df[order(base_df[,1]), ]
-  base_df <- data.frame(SampleID=rownames(base_df), base_df, check.names = FALSE)
+  base_df <- data.frame(SampleID=rownames(base_df), base_df, check.names = FALSE, stringsAsFactors = FALSE)
   out_list <- list()
   if(type=="pair"){
     groups <- unique(map_df[,1])
@@ -180,6 +203,15 @@ data_factory <- function(category="Category", cpd_label = "name", type = "pair",
   return(out_list)
 }
 
+
+map_table_header <- function(cpd_table){
+  sample_index <- colnames(cpd_table)%in%names(sample_id_map)
+  colnames(cpd_table)[sample_index] <- sample_id_map[colnames(cpd_table)[sample_index]]
+  return(cpd_table)
+}
+
+
+
 for(category in categories){
   # category <- "Category"
   write("#####################Data Prepare", stdout())
@@ -187,9 +219,7 @@ for(category in categories){
   
   # map
   cpd_table <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
-  sample_index <- colnames(cpd_table)%in%names(sample_id_map)
-  colnames(cpd_table)[sample_index] <- sample_id_map[colnames(cpd_table)[sample_index]]
-  
+  cpd_table <- map_table_header(cpd_table=cpd_table)
   if(input_type=="untarget"){
     # if(run_qc){
     #   dir.create("./01-QA_QC")
@@ -242,25 +272,29 @@ for(category in categories){
   moveto_dir(paste(category, "/00-DataProcess/01-QA_QC", sep = "/"))
   if(length(pca_files)>0){
     for(pca_file in  pca_files){
+      print(sprintf("Plot PCA for %s",  pca_file))
       pca_df <- read.csv(pca_file, header=TRUE,  row.names=1, check.names=FALSE, stringsAsFactors=FALSE)
+      pca_df <- map_table_header(pca_df)
       pca_df <- t(pca_df)
       sam_gp <- rownames(pca_df)
       is_qc <- grepl("QC", sam_gp)
       sam_gp[is_qc] <- "QC"
       sam_gp[!is_qc] <- "Sample"
-      pca.data <- data.frame(Sample=sample_id_map[rownames(pca_df)], Category=sam_gp, pca_df)
+      pca.data <- data.frame(Sample=rownames(pca_df), Category=sam_gp, pca_df)
       rownames(pca.data)<-rownames(pca_df)
       # pdf("")
       file=paste(str_replace(pca_file, "\\.[^\\.]+$", ""), "_PCA_QC.pdf", sep="")
       file_withid=paste(str_replace(pca_file, "\\.[^\\.]+$", ""), "_PCA_QC_with_ids.pdf", sep="")
       file=str_replace(file, "^.+/", "")
       file_withid=str_replace(file_withid, "^.+/", "")
+      # print(pca.data)
       elipse_pca(table = pca.data, file_biplot = file, file_pc1 = NA, label = F)
       elipse_pca(table = pca.data, file_biplot = file_withid, file_pc1 = NA, label = T)
     }
   }
   write("#####################QA plot", stdout())
   data <- data_factory(category = category, type = "all", fix_columns=fix_columns)
+  # print(data)
   elipse_pca(table = data, file_pc1 = "AllSample_PC1.pdf", file_biplot = NA, sam_order = ordered_samples)
   datas <- data_factory(category = category, type = "single", fix_columns=fix_columns)
   for (data in datas) {
@@ -286,7 +320,7 @@ for(category in categories){
   }
   
   datas <- data_factory(category = category, fix_columns=fix_columns)
-  report_group <- datas[[1]]$name
+  report_group <- datas[[3]]$name
   sig_features_set <- list()
   for(data in datas){
     write("#####################ConcentrationSummary", stdout())
@@ -355,7 +389,7 @@ for(category in categories){
   #   system("rm *.log")
   # }
   
-  if(input_type=="untarget"){
+  if(!input_type=="target"){
     datas <- data_factory(category = category, cpd_label = "kegg_id", fix_columns=fix_columns)
     for(data in datas){
       write("#####################PathwayTopoEnrichment Analysis ", stdout())
