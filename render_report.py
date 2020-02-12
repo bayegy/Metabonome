@@ -113,10 +113,21 @@ exp_untarget = """
                 <h6>图2-1 代谢组实验流程</h6>
                 <p class="image-description"></p>
             </div>
+            <p>详细实验步骤参见实验检测报告。</p>
 """
 
 exp_target = """
-            <p>样品检测是基于超高效液相色谱串联质谱仪(UPLC-MS/MS)。具体参见方法说明。</p>
+            <p>样品检测基于气质联用（GC-MS）。具体参见实验检测报告。</p>
+"""
+
+exp_untarget_gc = """
+            <p>该实验中我们利用基于气质联用（GC-Q-MS）非靶向的方式研究了样本的代谢组。</p>
+            <ol>
+            <li>通过Agilent MSD ChemStation工作站将获得的原始数据转换成netCDF格式（xcms输入文件格式）</li>
+            <li>进行峰识别（peaks identification）、峰过滤（peaks filtration）、峰对齐（peaks alignment）</li>
+            <li>得到包括质核比（mass to charge ratio，m/z）和保留时间（retention time）及峰面积（intensity）等信息的数据矩阵；结合AMDIS程序进行代谢物的注释，注释所用数据库为National Institute of Standards and Technology（NIST）商业数据库和Wiley Registry代谢组数据库，其中代谢物烷烃保留指数根据The Golm Metabolome Database（GMD）（http://gmd.mpimp-golm.mpg.de/）提供的保留指数用于进一步的物质定性，同时大部分物质由标准品进行进一步确认，导出数据至excel（标准品鉴定过的物质为红色字体）进行后续分析。</li>
+            </ol>
+            <p>详细实验步骤参见实验检测报告。</p>
 """
 
 
@@ -133,6 +144,9 @@ def render_html(in_fp, out_fp=False, **kwargs):
 if report_type == "target":
     render_html(in_fp=html_path, qc_content="", pathway_content="", pathway_nav="", proc=exp_target,
                 bar_content="", od1="十", od2="十一", od3="十二", od4="图3-3", od5="图4-2")
-else:
+elif report_type == "untarget":
     render_html(in_fp=html_path, qc_content=qc_content, pathway_content=pathway_content, proc=exp_untarget,
+                pathway_nav=pathway_nav, bar_content=bar_content, od1="十一", od2="十二", od3="十三", od4="图3-4", od5="图4-3")
+else:
+    render_html(in_fp=html_path, qc_content=qc_content, pathway_content=pathway_content, proc=exp_untarget_gc,
                 pathway_nav=pathway_nav, bar_content=bar_content, od1="十一", od2="十二", od3="十三", od4="图3-4", od5="图4-3")
