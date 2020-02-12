@@ -13,11 +13,12 @@ qc_content = """
                 <h6>图3-3 质控样本PCA图</h6>
                 <p class="image-description">红色点为校正后的质控样本点（QC样本），蓝色点为检测样本。</p>
             </div>
-
+            <!--
             <div class="alert alert-primary alert-dismissible">
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
                 <strong>注：</strong> 数据预处理数据文件：metabolome_pos.xlsx （正离子模式）,metabolome_neg.xlsx （负离子模式）。metabolome_*.xls里面包含“raw”和“normalized”两个工作簿，其中“raw”工作簿是数据预处理前（即解卷积获得的）数据，“normalized”工作簿是经过归一化、QA等预处理后的数据。
             </div>
+            -->
 
 """
 
