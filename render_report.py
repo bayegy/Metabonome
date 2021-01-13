@@ -1,13 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.8
 import sys
 import os
 
-sp, html_path, report_type = sys.argv
+sp, html_path, input_type, flow_type = sys.argv
 
 
 qc_content = """
             <p>质量控制是生物分析的基本概念之一，用在保证组学测定的数据的重复性和精确性。由于色谱系统与质谱直接与样品接触， 随着分析样品的增多，色谱柱和质谱会逐步的污染，导致信号的漂移，造成测量的系统误差。通过重复使用同一个质控样本(QC样本)来跟踪整个数据采集过程的行为， 已经被大多数的分析化学领域专家推荐和使用。质控样本被用于评估整个质谱数据在采集过程中的信号漂移， 这些漂移进一步能够被精确的算法所识别，校正，提高数据的质量。本流程采用R语言statTarget包的QC-RFSC算法对各个样本的特征（每个代谢物）信号峰进行校正，并记录了每个代谢物的校正效果。QC样本是所有样本取等量混合后的样本，在信号数据采集过程中，在开头，结尾，以及中间部分位点插入QC样本，记录信号漂移情况。所有QC样本都是一样的，如果没有信号漂移，在数据采集过程中，QC样本的信号强度应该是保持不变的。如图3-3所示，校正信号漂移后，如果在PCA图中，QC样本点聚到一起，证明校正效果良好。</p>
-        
+
             <div class="image-block">
                 <img src="FiguresTablesForReport/图3-3.png">
                 <h6>图3-3 质控样本PCA图</h6>
@@ -95,8 +95,8 @@ bar_content = """
             </div>
 """
 
-
-exp_untarget = """
+exp_flow = {
+    "lc_ms": """
             <p>该实验中我们利用基于液质联用（LC-MS/MS）的方式研究了样本的代谢组。</p>
             <ol>
                 <li>
@@ -115,13 +115,11 @@ exp_untarget = """
                 <p class="image-description"></p>
             </div>
             <p>详细实验步骤参见实验检测报告。</p>
-"""
-
-exp_target = """
+""",
+    "gc_ms": """
             <p>样品检测基于气质联用（GC-MS）。具体参见实验检测报告。</p>
-"""
-
-exp_untarget_gc = """
+""",
+    "gc_q_ms": """
             <p>该实验中我们利用基于气质联用（GC-Q-MS）非靶向的方式研究了样本的代谢组。</p>
             <ol>
             <li>通过Agilent MSD ChemStation工作站将获得的原始数据转换成netCDF格式（xcms输入文件格式）</li>
@@ -129,7 +127,7 @@ exp_untarget_gc = """
             <li>得到包括质核比（mass to charge ratio，m/z）和保留时间（retention time）及峰面积（intensity）等信息的数据矩阵；结合AMDIS程序进行代谢物的注释，注释所用数据库为National Institute of Standards and Technology（NIST）商业数据库和Wiley Registry代谢组数据库，其中代谢物烷烃保留指数根据The Golm Metabolome Database（GMD）（http://gmd.mpimp-golm.mpg.de/）提供的保留指数用于进一步的物质定性，同时大部分物质由标准品进行进一步确认，导出数据至excel（标准品鉴定过的物质为红色字体）进行后续分析。</li>
             </ol>
             <p>详细实验步骤参见实验检测报告。</p>
-"""
+"""}
 
 
 def render_html(in_fp, out_fp=False, **kwargs):
@@ -142,12 +140,14 @@ def render_html(in_fp, out_fp=False, **kwargs):
         f.write(out)
 
 
-if report_type == "target":
-    render_html(in_fp=html_path, qc_content="", pathway_content="", pathway_nav="", proc=exp_target,
+if input_type.find("untarget") == -1:
+    render_html(in_fp=html_path, qc_content="", pathway_content="", pathway_nav="", proc=exp_flow[flow_type],
                 bar_content="", od1="十", od2="十一", od3="十二", od4="图3-3", od5="图4-2")
-elif report_type == "untarget":
-    render_html(in_fp=html_path, qc_content=qc_content, pathway_content=pathway_content, proc=exp_untarget,
+else:
+    render_html(in_fp=html_path, qc_content=qc_content, pathway_content=pathway_content, proc=exp_flow[flow_type],
                 pathway_nav=pathway_nav, bar_content=bar_content, od1="十一", od2="十二", od3="十三", od4="图3-4", od5="图4-3")
+"""
 else:
     render_html(in_fp=html_path, qc_content=qc_content, pathway_content=pathway_content, proc=exp_untarget_gc,
                 pathway_nav=pathway_nav, bar_content=bar_content, od1="十一", od2="十二", od3="十三", od4="图3-4", od5="图4-3")
+"""

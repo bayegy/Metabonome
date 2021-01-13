@@ -79,7 +79,10 @@ require_db <- function(dbs){
   file.copy(paste(DB_LOCATION, "/", dbs, sep = ""), "./")
 }
 
-prepare<-function(table, anal.type="stat"){
+prepare<-function(table, anal.type="stat", stat.mean=TRUE, normalize_data=NA, write_input=NA){
+    if((is.na(write_input)||write_input)&&exists("WRITE_INPUT")&&WRITE_INPUT){
+      write.table(table, "data_input.tsv", sep="\t", row.names=FALSE)
+    }
     mSet<-InitDataObjects("conc", anal.type = anal.type, FALSE)
     ## [1] "MetaboAnalyst R objects initialized ..."
     mSet<-Read.TextData(mSet, table, "row", "disc")
@@ -92,7 +95,26 @@ prepare<-function(table, anal.type="stat"){
     # mSet<-FilterVariable(mSet, "iqr", "F", 25)
     ## [1] " Further feature filtering based on Interquantile Range"
     mSet<-PreparePrenormData(mSet)
-    mSet<-Normalization(mSet, "MedianNorm", "LogNorm", "AutoNorm", ratio=FALSE, ratioNum=20)
+    if(is.na(normalize_data)){
+      normalize <- NORMALIZE_DATA
+    }else{
+      normalize <- normalize_data
+    }
+    if(normalize){
+      # mSet<-Normalization(mSet, "MedianNorm", "LogNorm", "AutoNorm", ratio=FALSE, ratioNum=20)
+      mSet<-Normalization(mSet, "MedianNorm", "LogNorm", "AutoNorm", ratio=FALSE, ratioNum=20)
+    }else{
+      mSet<-Normalization(mSet, "none", "none", "none", ratio=FALSE, ratioNum=20)
+    }
+    #
+    if((is.na(write_input)||write_input)&&exists("WRITE_INPUT")&&WRITE_INPUT){
+      write.table(as.matrix(mSet$dataSet$norm), "data_input_after_normalization.tsv",
+       quote=FALSE, col.names=NA, sep="\t")
+    }
+    if(stat.mean){
+      df <- groupCenter(mSet)
+      write.csv(df, "groups_mean.csv")
+    }
     return(mSet)
 }
 
@@ -151,11 +173,14 @@ rownames_join<-function(x,y){
 
 
 
-cross_reference<-function(query_compounds, type="name", mask=c("\\'", "\\s")){
+cross_reference<-function(query_compounds, type="name",
+  # mask=c("\\'", "\\s", "_", "\\(", "\\)", "+", ":", ),
+    mask=c("[^\\w\\-.#|;]", "_")
+  ){
   norm_for_match<-function(x){
     x<-tolower(x)
     for(s in mask){
-      x<-gsub(s,"",x)
+      x<-gsub(s, "", x, perl=TRUE)
     }
     return(x)
   }
@@ -206,7 +231,82 @@ scatter3D<-function(xyz, color_by, out_img="Scatter3D_plot.pdf", colors=NA, shap
 }
 
 
-plot_volcano<-function(data, out_img="volcano.pdf", axis=c(1,2), top=NA, threshold=c(2, 1.3), threshold_both=TRUE, label="rownames", x_lab=NA, y_lab=NA, bg_colors=c("#E1FFFF05", "#99FF9905", "#FFCC9905"), size="integ"){
+# plot_volcano<-function(data, out_img="volcano.pdf", axis=c(1,2), top=NA, threshold=c(2, 1.3), threshold_both=TRUE, label="rownames", x_lab=NA, y_lab=NA, bg_colors=c("#E1FFFF05", "#99FF9905", "#FFCC9905"), size="integ"){
+#     xy<-choose(is.numeric(axis), colnames(data)[axis], axis)
+#     lbl<-choose(is.numeric(label), choose(label, colnames(data)[label], "rownames"), label)
+#     sz <- choose(is.numeric(size), colnames(data)[size], size)
+#     x_index<-which(colnames(data)%in%xy[1])
+#     y_index<-which(colnames(data)%in%xy[2])
+#     colnames(data)[x_index]<-"plot_volcano_x"
+#     colnames(data)[y_index]<-"plot_volcano_y"
+#     span_x<-0.5*sd(data[,x_index])
+#     span_y<-0.5*sd(data[,y_index])
+#     d_max_x<-max(abs(data[,x_index]))+span_x
+#     d_max_y<-max(abs(data[,y_index]))+span_y
+#     d_min_x<-min(data[, x_index])
+#     d_min_y<-min(data[, y_index])
+#     d_min_x<-choose(d_min_x<0, d_min_x-span_x, d_min_x)
+#     d_min_y<-choose(d_min_y<0, d_min_y-span_y, d_min_y)
+#     ifelse(lbl=="rownames", data$plot_volcano_lbl<-rownames(data), colnames(data)[colnames(data)%in%lbl]<-"plot_volcano_lbl")
+#     if(size=="integ"){
+#       data$plot_volcano_size <- abs(data$plot_volcano_x) + abs(data$plot_volcano_y)
+#     }else{
+#       if(!is.na(size)){
+#         colnames(data)[colnames(data)%in%sz]<-"plot_volcano_size"
+#       }
+#     }
+#     data <- data[order(abs(data[, x_index]), abs(data[, y_index]), decreasing = T),]
+#     label_data<-choose(is.na(top),
+#                        choose(threshold_both,
+#                               data[(abs(data[x_index])>or(threshold[1], 0))&(abs(data[y_index])>or(threshold[2], 0)), ],
+#                               data[(abs(data[x_index])>or(threshold[1], 0))|(abs(data[y_index])>or(threshold[2], 0)), ]),
+#                        head(data, top))
+
+#     x_lab<-or(x_lab, xy[1])
+#     y_lab<-or(y_lab, xy[2])
+#     xin_lab<-paste(x_lab,"=",threshold[1])
+#     yin_lab<-paste(y_lab,"=",threshold[2])
+#     # xin_coord <- c(threshold[1]+span_x, span_y)
+#     # yin_coord <- c(span_x, threshold[2]+span_y)
+
+#     in_lab_data <- data.frame(x=c(threshold[1], d_min_x+span_x*2),
+#                               y=c(d_min_y+span_y, threshold[2]),
+#                               label=c(xin_lab, yin_lab))
+
+#     p<-ggplot(data=data,aes(x=plot_volcano_x, y=plot_volcano_y)) +
+#       geom_hline(yintercept=threshold[2],linetype="dashed") + 
+#       choose(d_min_y>=0, theme(), geom_hline(yintercept=-threshold[2],linetype="dashed")) +
+#       geom_vline(xintercept=threshold[1],linetype="dashed") +
+#       choose(d_min_x>=0, theme(), geom_vline(xintercept=-threshold[1],linetype="dashed")) +
+#       choose(d_min_x>=0, theme(), geom_vline(xintercept = 0)) +
+#       choose(d_min_y>=0, theme(), geom_hline(yintercept = 0)) +
+#       choose(is.na(threshold[1]), theme(), geom_rect(xmin=threshold[1], xmax=d_max_x, ymin=d_min_y, ymax=d_max_y, fill=bg_colors[1])) +
+#       choose(d_min_x>=0, theme(), geom_rect(xmin=-threshold[1], xmax=-d_max_x, ymin=d_min_y, ymax=d_max_y, fill=bg_colors[1])) +
+#       choose(is.na(threshold[2]), theme(), geom_rect(ymin=threshold[2], ymax=d_max_y, xmin=d_min_x, xmax=d_max_x, fill=bg_colors[2])) +
+#       choose(d_min_y>=0, theme(), geom_rect(ymin=-threshold[2], ymax=-d_max_y, xmin=d_min_x, xmax=d_max_x, fill=bg_colors[2])) +
+#       choose(any(is.na(threshold)), theme(), geom_rect(ymin=threshold[2], ymax=d_max_y, xmin=threshold[1], xmax=d_max_x, fill=bg_colors[3])) +
+#       choose(any(is.na(threshold))|d_min_x>=0, theme(), geom_rect(ymin=threshold[2], ymax=d_max_y, xmin=-threshold[1], xmax=-d_max_x, fill=bg_colors[3])) +
+#       choose(any(is.na(threshold))|d_min_y>=0, theme(), geom_rect(ymin=-threshold[2], ymax=-d_max_y, xmin=threshold[1], xmax=d_max_x, fill=bg_colors[3])) +
+#       choose(any(is.na(threshold))|d_min_y>=0|d_min_x>=0, theme(), geom_rect(ymin=-threshold[2], ymax=-d_max_y, xmin=-threshold[1], xmax=-d_max_x, fill=bg_colors[3])) +
+#       choose(is.na(size), geom_point(size=3, color="#DC143C", alpha=0.3), geom_point(aes(size=plot_volcano_size), color="#DC143C", alpha=0.3)) +
+#       geom_text_repel(data=label_data, aes(x=plot_volcano_x,y=plot_volcano_y,label=plot_volcano_lbl), color='black', size=3) +
+#       geom_text(data = in_lab_data, mapping = aes(x=x,y=y,label=label), size=4, color='red') +
+#       theme_bw() + xlab(x_lab) + ylab(y_lab) + labs(size = size) +
+#       choose(size=="integ", guides(size=FALSE), theme()) +
+#       scale_y_continuous(limits=c(d_min_y, d_max_y), expand = c(0, 0)) +
+#       scale_x_continuous(limits=c(d_min_x, d_max_x), expand = c(0, 0)) +
+#       theme(panel.grid=element_blank(),
+#             axis.line = element_line(),
+#             panel.border =  element_blank(),
+#             text = element_text(size = 15))
+#     ggsave(plot = p, out_img, dpi=300, height = 8, width = choose(is.na(size), 8, 10))
+# }
+
+
+plot_volcano<-function(data, out_img="volcano.pdf", axis=c(1,2), top=0, threshold=c(2, 1.3), threshold_both=TRUE, label="rownames", x_lab=NA, y_lab=NA, bg_colors=c("#E1FFFF05", "#99FF9905", "#FFCC9905"), size="integ"){
+    if(is.na(top)){
+      top <- 0
+    }
     xy<-choose(is.numeric(axis), colnames(data)[axis], axis)
     lbl<-choose(is.numeric(label), choose(label, colnames(data)[label], "rownames"), label)
     sz <- choose(is.numeric(size), colnames(data)[size], size)
@@ -224,20 +324,33 @@ plot_volcano<-function(data, out_img="volcano.pdf", axis=c(1,2), top=NA, thresho
     d_min_y<-choose(d_min_y<0, d_min_y-span_y, d_min_y)
     ifelse(lbl=="rownames", data$plot_volcano_lbl<-rownames(data), colnames(data)[colnames(data)%in%lbl]<-"plot_volcano_lbl")
     if(size=="integ"){
-      data$plot_volcano_size <- abs(data$plot_volcano_x) + abs(data$plot_volcano_y)
+      data$plot_volcano_size <- (abs(data$plot_volcano_x) + abs(data$plot_volcano_y))**2
     }else{
       if(!is.na(size)){
         colnames(data)[colnames(data)%in%sz]<-"plot_volcano_size"
       }
     }
-    data <- data[order(abs(data[, x_index]), abs(data[, y_index]), decreasing = T),]
-    label_data<-choose(is.na(top),
+    data <- data[order(abs(data[, y_index]), abs(data[, x_index]), decreasing = T),]
+    label_data<-choose(top==0,
                        choose(threshold_both,
                               data[(abs(data[x_index])>or(threshold[1], 0))&(abs(data[y_index])>or(threshold[2], 0)), ],
                               data[(abs(data[x_index])>or(threshold[1], 0))|(abs(data[y_index])>or(threshold[2], 0)), ]),
                        head(data, top))
+
+    x_lab<-or(x_lab, xy[1])
+    y_lab<-or(y_lab, xy[2])
+    xin_lab<-paste(x_lab,"=",threshold[1])
+    yin_lab<-paste(y_lab,"=",threshold[2])
+    # xin_coord <- c(threshold[1]+span_x, span_y)
+    # yin_coord <- c(span_x, threshold[2]+span_y)
+
+    in_lab_data <- data.frame(x=c(threshold[1], d_min_x+span_x*2),
+                              y=c(d_min_y+span_y, threshold[2]),
+                              label=c(xin_lab, yin_lab))
+    data$plot_volcano_dot_colors <- "#222222"
+    data$plot_volcano_dot_colors[rownames(data)%in%rownames(label_data)] <- "#DC143C"
     p<-ggplot(data=data,aes(x=plot_volcano_x, y=plot_volcano_y)) +
-      geom_hline(yintercept=threshold[2],linetype="dashed") + 
+      geom_hline(yintercept=threshold[2],linetype="dashed") +
       choose(d_min_y>=0, theme(), geom_hline(yintercept=-threshold[2],linetype="dashed")) +
       geom_vline(xintercept=threshold[1],linetype="dashed") +
       choose(d_min_x>=0, theme(), geom_vline(xintercept=-threshold[1],linetype="dashed")) +
@@ -251,9 +364,10 @@ plot_volcano<-function(data, out_img="volcano.pdf", axis=c(1,2), top=NA, thresho
       choose(any(is.na(threshold))|d_min_x>=0, theme(), geom_rect(ymin=threshold[2], ymax=d_max_y, xmin=-threshold[1], xmax=-d_max_x, fill=bg_colors[3])) +
       choose(any(is.na(threshold))|d_min_y>=0, theme(), geom_rect(ymin=-threshold[2], ymax=-d_max_y, xmin=threshold[1], xmax=d_max_x, fill=bg_colors[3])) +
       choose(any(is.na(threshold))|d_min_y>=0|d_min_x>=0, theme(), geom_rect(ymin=-threshold[2], ymax=-d_max_y, xmin=-threshold[1], xmax=-d_max_x, fill=bg_colors[3])) +
-      choose(is.na(size), geom_point(size=3, color="#DC143C", alpha=0.3), geom_point(aes(size=plot_volcano_size), color="#DC143C", alpha=0.3)) +
+      choose(is.na(size), geom_point(size=3, color=data$plot_volcano_dot_colors, alpha=0.3), geom_point(aes(size=plot_volcano_size), color=data$plot_volcano_dot_colors, alpha=0.3)) +
       geom_text_repel(data=label_data, aes(x=plot_volcano_x,y=plot_volcano_y,label=plot_volcano_lbl), color='black', size=3) +
-      theme_bw() + xlab(or(x_lab, xy[1])) + ylab(or(y_lab, xy[2])) + labs(size = size) +
+      geom_text(data = in_lab_data, mapping = aes(x=x,y=y,label=label), size=4, color='red') +
+      theme_bw() + xlab(x_lab) + ylab(y_lab) + labs(size = size) +
       choose(size=="integ", guides(size=FALSE), theme()) +
       scale_y_continuous(limits=c(d_min_y, d_max_y), expand = c(0, 0)) +
       scale_x_continuous(limits=c(d_min_x, d_max_x), expand = c(0, 0)) +
@@ -266,8 +380,8 @@ plot_volcano<-function(data, out_img="volcano.pdf", axis=c(1,2), top=NA, thresho
 
 
 PCA<-function(table, out_dir, colors=NA){
-    mSet<-prepare(table)
     prepare_out_dir(out_dir)
+    mSet<-prepare(table)
     mSet<-tryCatch(
         {
             UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
@@ -286,15 +400,17 @@ PCA<-function(table, out_dir, colors=NA){
 }
 
 
-PLSDA<-function(table, out_dir, colors=NA){
-    mSet<-prepare(table)
+PLSDA<-function(table, out_dir, colors=NA, normalize_data=NA, th_vip=1, th_p=0.05, top=0){
+    # print(colors)
     prepare_out_dir(out_dir)
+    mSet<-prepare(table, normalize_data=normalize_data)
+    th_p = round(-log(th_p, 10), 3)
     mSet<-tryCatch(
         {
             UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
             mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2, equal.var = F)
             mSet<-PLSR.Anal(mSet, reg=TRUE)
-            # 
+            #
             tryCatch(
               {
                 mSet<-PLSDA.CV(mSet, methodName = "L", compNum = 2, choice = "Q2")
@@ -302,19 +418,19 @@ PLSDA<-function(table, out_dir, colors=NA){
                 mSet<-PlotPLS.Permutation(mSet = mSet, imgName="plsda_permutation_", format = "pdf", dpi = 300, width = 30)
               },
               error=function(e){print("Permutation failed!");print(e)}
-            )            
+            )
             # browser()
             remove_files()
             mSet<-PlotPLS2DScore(mSet, "plsda_score2d_", "pdf", 300, width=30, 1,2,0.95,show=0,0)
             mSet<-PlotPLS2DScore(mSet, "plsda_score2d_with_ids_", "pdf", 300, width=30, 1,2,0.95,show=1,0)
             mSet<-PlotPLS3DScoreImg(mSet,"plsda_score3d_","pdf", 300, 30, 1,2,3, 40)
-            # 
+            #
             imp<-purrr::reduce(list(mSet$analSet$plsr$loadings[,1:3], mSet$analSet$plsda$vip.mat, mSet$analSet$plsda$coef.mat, mSet$analSet$tt$sig.mat), rownames_join)
             imp<-imp[, -5]
             colnames(imp)[1:5]<-c("comp1.loadings", "comp2.loadings", "comp3.loadings", "VIP", "Coefficients")
             imp["-log10(FDR adjusted p)"] <- -log10(imp["FDR"])
-            plot_volcano(imp, out_img = "plsda_features_importance_fdr_adjusted.pdf", axis = c("VIP","-log10(FDR adjusted p)"), threshold=c(1, 1.3))
-            plot_volcano(imp, out_img = "plsda_features_importance.pdf", axis = c("VIP","-log10(p)"), threshold=c(1, 1.3))
+            plot_volcano(imp, out_img = "plsda_features_importance_fdr_adjusted.pdf", axis = c("VIP","-log10(FDR adjusted p)"), threshold=c(th_vip, th_p), top=top)
+            plot_volcano(imp, out_img = "plsda_features_importance.pdf", axis = c("VIP","-log10(p)"), threshold=c(th_vip, th_p), top=top)
             write.csv(imp, "plsda_features_importance.csv")
             # print(imp)
         },
@@ -325,8 +441,8 @@ PLSDA<-function(table, out_dir, colors=NA){
 
 
 SPLSDA<-function(table, out_dir, colors=NA){
-    mSet<-prepare(table)
     prepare_out_dir(out_dir)
+    mSet<-prepare(table)
     mSet<-tryCatch(
         {
             UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
@@ -342,9 +458,10 @@ SPLSDA<-function(table, out_dir, colors=NA){
 
 
 
-OPLSDA<-function(table, out_dir, colors=NA){
-    mSet<-prepare(table);
+OPLSDA<-function(table, out_dir, colors=NA, normalize_data=NA, th_vip=1, th_p=0.05, top=0){
     prepare_out_dir(out_dir);
+    mSet<-prepare(table, normalize_data=normalize_data);
+    th_p = round(-log(th_p, 10), 3)
     mSet<-tryCatch(
         {
             UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
@@ -367,11 +484,12 @@ OPLSDA<-function(table, out_dir, colors=NA){
             colnames(load.mat) <- c("Loading (t1)","OrthoLoading (to1)")
             imp <- reduce(list(load.mat, imp, mSet$analSet$tt$sig.mat), rownames_join)
             imp["-log10(FDR adjusted p)"] <- -log10(imp["FDR"])
-            plot_volcano(imp, out_img = "oplsda_features_importance_fdr_adjusted.pdf", axis = c("VIP","-log10(FDR adjusted p)"), threshold=c(1, 1.3))
-            plot_volcano(imp, out_img = "oplsda_features_importance.pdf", axis = c("VIP","-log10(p)"), threshold=c(1, 1.3))
+            plot_volcano(imp, out_img = "oplsda_features_importance_fdr_adjusted.pdf", axis = c("VIP","-log10(FDR adjusted p)"), threshold=c(th_vip, th_p), top=top)
+            plot_volcano(imp, out_img = "oplsda_features_importance.pdf", axis = c("VIP","-log10(p)"), threshold=c(th_vip, th_p), top=top)
             write.csv(imp, "oplsda_features_importance.csv")
-            write.csv(mSet$analSet$oplsda$modelDF, file="oplsda_model_fitness_summary.csv")
-            
+            model <- mSet$analSet$oplsda$modelDF
+            model <- model[, -7]
+            write.csv(model, file="oplsda_model_fitness_summary.csv")
         },
         error=function(e){print(e)},
         finally={setwd(PWD)}
@@ -403,10 +521,17 @@ OPLSDA<-function(table, out_dir, colors=NA){
 
 
 groupCenter<-function(table, method="mean", check.names=TRUE){
-  df <- choose(is.character(table), read.csv(table, quote = "", check.names = F, stringsAsFactors = F), table)
-  rownames(df) <- df[, 1]
-  gp <- df[, 2]
-  df <- df[,-c(1,2)]
+  if(class(table)=="list"){
+    # If the table is a mSet
+    # df <- table$dataSet$norm
+    df <- table$dataSet$row.norm
+    gp <- table$dataSet$cls
+  }else{
+    df <- choose(is.character(table), read.csv(table, quote = "", check.names = F, stringsAsFactors = F), table)
+    rownames(df) <- df[, 1]
+    gp <- df[, 2]
+    df <- df[,-c(1,2)]
+  }
   df <- t(base::apply(df, 2, function(x){return(base::tapply(x, INDEX = gp, FUN = choose(method=="mean", base::mean, base::median), na.rm=T))}))
   colnames_cp <- colnames(df)
   colnames(df)<-paste(colnames_cp, choose(method=="mean","-Mean","-Median"), sep = "")
@@ -421,13 +546,15 @@ groupCenter<-function(table, method="mean", check.names=TRUE){
 }
 
 
-Volcano <- function(table, out_dir="./", cmpType=0, colors=NA){
-  mSet<-prepare(table);
-  gp_mean<-groupCenter(table = table);
+Volcano <- function(table, out_dir="./", cmpType=0, th_lfc=1, th_p=0.05, top=0, normalize_data=NA){
   prepare_out_dir(out_dir);
+  mSet<-prepare(table, normalize_data=normalize_data);
+  gp_mean<-groupCenter(table = mSet);
+  th_lp = round(-log(th_p, 10), 3)
+  th_fc = 2**th_lfc
   mSet<-tryCatch(
     {
-      UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
+      # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
       # mSet<-Ttests.Anal(mSet = mSet, nonpar = F, threshp = 2)
       # mSet<-FC.Anal.unpaired(mSetObj = mSet)
       mSet<-Volcano.Anal(mSet, threshp = 2, fcthresh = 1, cmpType = cmpType, equal.var = F)
@@ -436,10 +563,10 @@ Volcano <- function(table, out_dir="./", cmpType=0, colors=NA){
       print(dif_name)
       imp <- reduce(list(mSet$analSet$volcano$sig.mat, gp_mean), rownames_join)
       write.csv(imp, "Volcano_features_significance.csv")
-      mSet<-Volcano.Anal(mSet, threshp = 0.05, fcthresh = 2, cmpType = cmpType)
+      mSet<-Volcano.Anal(mSet, threshp = th_p, fcthresh = th_fc, cmpType = cmpType)
       remove_files(c("volcano.csv"))
       # imp["-log10(FDR adjusted p)"] <- -log10(imp["FDR"])
-      plot_volcano(imp, out_img = "Volcano_features_importance.pdf", axis = c("log2(FC)","-log10(p)"), threshold = c(1, 1.3))
+      plot_volcano(imp, out_img = "Volcano_features_importance.pdf", axis = c("log2(FC)","-log10(p)"), threshold = c(th_lfc, th_lp), top=top)
       PlotVolcano(mSetObj=mSet, imgName="Volcano_features_significance_", plotLbl=1, format="pdf", dpi=300, width=30)
     },
     error=function(e){print(e)},
@@ -448,9 +575,9 @@ Volcano <- function(table, out_dir="./", cmpType=0, colors=NA){
 }
 
 
-RF<-function(table, out_dir){
-  mSet<-prepare(table);
+RF<-function(table, out_dir, normalize_data=NA, feat_num=15){
   prepare_out_dir(out_dir);
+  mSet<-prepare(table, normalize_data=normalize_data);
   mSet<-tryCatch(
     {
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
@@ -462,8 +589,8 @@ RF<-function(table, out_dir){
       # plot_volcano(imp, out_img = "RF_features_importance.pdf", axis = c("MeanDecreaseAccuracy","-log10(FDR adjusted p)"))
       write.csv(imp, "RF_features_importance.csv")
       # mSet<-PlotRF.Classify(mSetObj=mSet, imgName="RF_performance", format="pdf", dpi=300, width=30)
-      mSet<-PlotRF.Outlier(mSetObj=mSet, imgName="RF_outliers", format="pdf", dpi=300, width=30)
-      mSet<-PlotRF.VIP(mSetObj=mSet, imgName="RF_features_importance", format="pdf", dpi=300, width=30)
+      # mSet<-PlotRF.Outlier(mSetObj=mSet, imgName="RF_outliers", format="pdf", dpi=300, width=30)
+      mSet<-PlotRF.VIP(mSetObj=mSet, imgName="RF_features_importance", format="pdf", dpi=300, width=30, feat.num=feat_num)
     },
     error=function(e){print(e)},
     finally={setwd(PWD)}
@@ -472,9 +599,9 @@ RF<-function(table, out_dir){
 
 
 
-SVM<-function(table, out_dir){
-  mSet<-prepare(table);
+SVM<-function(table, out_dir, normalize_data=NA, feat_num=15){
   prepare_out_dir(out_dir);
+  mSet<-prepare(table, normalize_data=normalize_data);
   mSet<-tryCatch(
     {
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
@@ -492,7 +619,7 @@ SVM<-function(table, out_dir){
       # Plot the predictive accuracy of models with increasing number of features
       # mSet<-PlotAccuracy(mSet, imgName = "svm_accuracy_", format="png", dpi=300)
       # Plot the most important features of a selected model ranked from most to least important
-      mSet<-PlotImpVars(mSet, imgName = "svm_features_importance_", format="png", dpi=300, mdl.inx = -1, measure="mean", feat.num=15)
+      mSet<-PlotImpVars(mSet, imgName = "svm_features_importance_", format="png", dpi=300, mdl.inx = -1, measure="mean", feat.num=feat_num)
       remove_files(c("csv"))
       imp <- reduce(list(mSet$analSet$multiROC$imp.mat, mSet$analSet$tt$sig.mat), rownames_join)
       # imp["-log10(FDR adjusted p)"] <- -log10(imp["FDR"])
@@ -510,9 +637,9 @@ enrichment_from_peak<-function(table, out_dir, organism="hsa"){
   database_path<- paste(DB_LOCATION, "/", organism, "/", organism, "_mfn.rds", sep = "")
   # database_file<-str_extract(database, "[^/]+$")
   # database_name<-str_extract(database_file, "^[^\\.]+")
-  database_name <- paste(organism, "_mfn", sep = "") 
-  mSet<-prepare(table);
+  database_name <- paste(organism, "_mfn", sep = "")
   prepare_out_dir(out_dir);
+  mSet<-prepare(table);
   mSet<-tryCatch(
     {
       # Re-perform normalization, without auto-scaling
@@ -595,8 +722,8 @@ enrichment_from_peak<-function(table, out_dir, organism="hsa"){
 
 enrichment_from_compounds <- function(table, out_dir, threshp = 0.05){
   table <- normalizePath(table)
-  mSet<-prepare(table);
   prepare_out_dir(out_dir);
+  mSet<-prepare(table);
   compound_db_path <- paste(DB_LOCATION, "/", "compound_db.rds", sep = "")
   kegg_pathway_path <- paste(DB_LOCATION, "/", "kegg_pathway.rda", sep = "")
   mSet<-tryCatch(
@@ -651,8 +778,8 @@ enrichment_from_compounds <- function(table, out_dir, threshp = 0.05){
 
 topo_analysis <- function(table, out_dir, threshp = 0.5, organism="hsa", cmpType=0){
   table <- normalizePath(table)
-  mSet<-prepare(table);
   prepare_out_dir(out_dir);
+  mSet<-prepare(table);
   mSet<-tryCatch(
     {
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
@@ -686,8 +813,8 @@ topo_analysis <- function(table, out_dir, threshp = 0.5, organism="hsa", cmpType
 
 network_map <- function(table, out_dir, threshp = 0.5, organism="hsa", paired=TRUE, cmpType=0){
   table <- normalizePath(table)
-  mSet<-prepare(table);
   prepare_out_dir(out_dir);
+  mSet<-prepare(table);
   mSet<-tryCatch(
     {
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
@@ -726,14 +853,15 @@ network_map <- function(table, out_dir, threshp = 0.5, organism="hsa", paired=TR
     },
     error=function(e){print(e)},
     finally={setwd(PWD)}
-  )  
+  )
 }
 
 
-pathway_analysis <- function(table="/home/cheng/pipelines/testdir/testbono/human_cachexia.csv", out_dir="./", threshp = 0.05, organism="rno"){
+pathway_analysis <- function(table="/home/cheng/pipelines/testdir/testbono/human_cachexia.csv", out_dir="./", threshp = 0.05, organism="rno", normalize_data=NA, ora_p=0.05, q_type="kegg"){
   # table <- normalizePath(table)
-  mSet<-prepare(table);
   prepare_out_dir(out_dir);
+  mSet<-prepare(table, normalize_data=normalize_data);
+  ora_lp = round(-log(ora_p, 10), 3)
   mSet<-tryCatch(
     {
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
@@ -753,15 +881,15 @@ pathway_analysis <- function(table="/home/cheng/pipelines/testdir/testbono/human
       require_db(c(sprintf("%s/%s.rda", organism, organism), "compound_db.rds", "syn_nms.rds"))
       mSet<-InitDataObjects("conc", "pathora", FALSE)
       mSet<-Setup.MapData(mSet, tmp.vec);
-      mSet<-CrossReferencing(mSet, "kegg");
+      mSet<-CrossReferencing(mSet, q_type);
       mSet<-CreateMappingResultTable(mSet);
       mSet<-SetKEGG.PathLib(mSet, organism)
       mSet<-SetMetabolomeFilter(mSet, F);
       mSet<-CalculateOraScore(mSet, "dgr", "hyperg")
       ora.df <- mSet$analSet$ora.df
-      plot_volcano(ora.df, out_img = "pathway_enrichment_and_topo_impact.pdf", axis = c("-log10(p)", "Impact"), threshold = c(1.3, NA), label = "Description")
+      plot_volcano(ora.df, out_img = "pathway_enrichment_and_topo_impact.pdf", axis = c("-log10(p)", "Impact"), threshold = c(ora_lp, NA), label = "Description")
       mSet<-PlotORA(mSet, "ora_hyper_score_", "bar", "pdf", 300, width=30)
-      sig_pathways <- ora.df["Description"][ora.df["Raw p"]<=0.05]
+      sig_pathways <- ora.df["Description"][ora.df["Raw p"]<=ora_p]
       sig_pathways <- sort(sig_pathways)
       for(pathway in sig_pathways){
         print(pathway)
@@ -809,26 +937,27 @@ abundance_barplot <- function(table, out_dir="./", by_group_mean=FALSE, num=20, 
       label_order<-rownames(table)
       
       otu <- table[, -c(1,2)]
+      # print(head(otu, 5))
       if(min(otu, na.rm = T)<0){
-        otu <- otu - min(otu)
+        otu <- otu - min(otu,na.rm = TRUE)
       }
 
       sum_abundance<-colSums(otu)
       otu<-otu[, order(sum_abundance,decreasing = T)]
       
-      otu <- apply(otu, 1, function(x){x/sum(x)})*100
+      otu <- apply(otu, 1, function(x){x/sum(x, na.rm = TRUE)})*100
       otu <- t(otu)
       
       
       if(by_group_mean){
-        otu<-data.frame(apply(otu,2,function(x){tapply(x,INDEX = group,mean)}),check.names=F)
-        otu<-data.frame(t(apply(otu,1,function(x){x/sum(x)}))*100,check.names=F)
+        otu<-data.frame(apply(otu,2,function(x){tapply(x,INDEX = group,mean,na.rm = TRUE)}),check.names=F)
+        otu<-data.frame(t(apply(otu,1,function(x){x/sum(x, na.rm = TRUE)}))*100,check.names=F)
         label_order<-ordered(rownames(otu))
         #print(otu)
       }
       
       if(num<ncol(otu)-1){
-        otu<-data.frame(otu[,1:num],Other=apply(otu[,(num+1):ncol(otu)],1,sum),check.names = F,check.rows = T)
+        otu<-data.frame(otu[,1:num],Other=apply(otu[,(num+1):ncol(otu)],1,sum, na.rm = TRUE),check.names = F,check.rows = T)
       }else{
         otu<-data.frame(otu,check.names = F,check.rows = T)
       }
@@ -893,7 +1022,7 @@ abundance_heatmap <- function(table, out_dir="./", by_group_mean=FALSE, num=30, 
       group <- table[2]
       otu <- table[, -c(1,2)]
       if(min(otu, na.rm = T)<0){
-        otu <- otu - min(otu)
+        otu <- otu - min(otu, na.rm = T)
       }
       p1<-max(nchar(colnames(otu)))
       sum_otu<-colSums(otu)
@@ -1004,8 +1133,8 @@ get_database<- function(){
 
 sig_boxplot <- function(table="/home/cheng/pipelines/testdir/testbono/human_cachexia.csv", out_dir="./", threshp = 0.05, colors=NA, top=25, pair_wise=FALSE, width=NA, height=NA){
   # table <- normalizePath(table)
-  mSet<-prepare(table);
   prepare_out_dir(out_dir);
+  mSet<-prepare(table);
   tryCatch(
     {
       # UpdateGraphSettings(mSet, colVec=colors, shapeVec=NA)
@@ -1031,7 +1160,7 @@ sig_boxplot <- function(table="/home/cheng/pipelines/testdir/testbono/human_cach
         }else{
           method <- "anova"
         }
-        remove_files(c("t_test","anova"))
+        # remove_files(c("t_test","anova"))
         num_col <- ceiling(sqrt(actual_num))
         num_row <- ceiling(actual_num/num_col)
         p <- ggplot(data = df, mapping = aes(x=Category, y=value, fill=Category)) + geom_boxplot() + theme_bw() +
@@ -1057,8 +1186,8 @@ sig_boxplot <- function(table="/home/cheng/pipelines/testdir/testbono/human_cach
 
 elipse_pca <- function(table="/home/cheng/pipelines/testdir/testbono/human_cachexia.csv", file_biplot="PCA.pdf", file_pc1="PC1.pdf", colors=NA, sam_order=NA, out_dir="./", label=T){
     # table <- normalizePath(table)
-    mSet<-prepare(table);
     prepare_out_dir(out_dir);
+    mSet<-prepare(table, stat.mean=FALSE, write_input=FALSE);
     mSet<-tryCatch(
       {
         df.pca <- prcomp(mSet$dataSet$norm, center = TRUE, scale. = TRUE)

@@ -2,23 +2,17 @@
 library(optparse)
 library(purrr)
 #######arguments
-option_list <- list(
+option_list <- list( 
     make_option(c("-i", "--input"),metavar="path", dest="cpd",help="Specify the path of metabolites abundance table. Required",default=NULL),
     make_option(c("-m", "--map"),metavar="path",dest="map", help="Specify the path of mapping file. Required",default=NULL),
     # make_option(c("-q", "--qc-meta"),metavar="path",dest="qc", help="Specify the path of metadata file for QC.",default=NULL),
     make_option(c("-p", "--pca"),metavar="paths",dest="pca", help="comma seprated paths to QC completed compound tables.",default=NULL),
     make_option(c("-c", "--category"),metavar="string",dest="category", help="Category to compare. Required",default=NULL),
-    make_option(c("-C", "--colors"),metavar="string",dest="colors", help="Comma seprated group colors.",default=NULL),
-    make_option(c("-d", "--database"),metavar="path", dest="db",help="Path to the database directory.",
-      # default="/home/cheng/Databases/Metabonome_database/database",
-      default="/home/bayegy/Databases/metabolome"
-    ),
-    make_option(c("-s", "--species"),metavar="string", dest="species",help="The organism type of metabolites. Available now: hsa, mmu, rno. hsa means human; mmu means small mouse; rno means big rat.",default="hsa"),
-    make_option(c("-t", "--type"),metavar="string", dest="type",help="The input data type, (target_name, untarget_name, untarget_keggid_name, untarget_kegg_id). default: untarget_keggid_name",default="untarget_keggid_name"),
-    make_option(c("-f", "--flow"),metavar="string", dest="flow",help="Experiment work flow type, (lc_ms, gc_ms or gc_q_ms)",default="gc_q_ms"),
-    make_option(c("-n", "--normalize"),metavar="logical", dest="normalize",help="normalize the abundance table, T or F. default T",default="T"),
-    make_option(c("-r", "--report"),metavar="logical", dest="report",help="generate report, T or F. default T",default="T"),
-    make_option(c("-o", "--out-dir"),metavar="directory",dest="out", help="Specify the directory of output files",default="./")
+    make_option(c("-d", "--database"),metavar="path", dest="db",help="Path to the database directory.",default="/home/cheng/Databases/Metabonome_database/database"),
+    make_option(c("-s", "--species"),metavar="string", dest="species",help="The organism type of metabolites. Available now: hsa, mmu, rno",default="hsa"),
+    make_option(c("-t", "--type"),metavar="string", dest="type",help="The metabonome type, (target, untarget or untarget_gc)",default="untarget"),
+    make_option(c("-n", "--normalize"),metavar="string", dest="normalize",help="Wheather to normalize the data, (yes, no)",default="yes"),
+    make_option(c("-o", "--output"),metavar="directory",dest="out", help="Specify the directory of output files",default="./")
     )
 opt <- parse_args(OptionParser(option_list=option_list,description = "The metabonome analysis pipeline"))
 
@@ -45,11 +39,10 @@ base_dir<-normalizePath(dirname(get_Rscript_filename()))
 source(paste(base_dir, "metabonome_core.R", sep = "/"))
 pcas <- opt$pca
 input_type <- opt$type
-exp_flow <- opt$flow
-colors<-opt$colors
-report<-as.logical(opt$report)
-NORMALIZE_DATA <<- as.logical(opt$normalize)
-WRITE_INPUT <<- TRUE
+
+
+NORMALIZE_DATA <<- opt$normalize=="yes"
+
 #TEST
 # setwd("/media/cheng/disk1/Metabonome_Projects/cheli")
 # query_type = "kegg_id"
@@ -77,11 +70,6 @@ map_file <- normalizePath(map_file)
 root_dir <- paste(out_dir, "/ResultsMetabonome", sep = "")
 pca_files <- choose(is.null(pcas), pcas, normalizePath(str_split(pcas, ',')[[1]]))
 
-
-for(file in c(pca_files, map_file, cpd_file)){
-  system(sprintf("%s/strip_input_file.py %s ,", base_dir, file))
-}
-
 sprintf("Results is saved at %s", root_dir)
 ######dir preparation
 moveto_dir <- function(dir="/"){
@@ -92,60 +80,27 @@ moveto_dir <- function(dir="/"){
   setwd(dir = dir)
 }
 
-df_map<-function(df, func){
-  out<-c()
-  for(i in 1:ncol(df)){
-    out[i]<-func(df[, i])
-  }
-  return(out)
-}
-
 set_db_location(db_dir)
 
 write("#####################Read Table", stdout())
 # cpd_table <- read.table(cpd_file, sep = "\t", header = T, row.names = 1, stringsAsFactors = FALSE)
-mapping_table <- read.csv(map_file, header = T, na.strings="", row.names = 1, stringsAsFactors = FALSE)
+mapping_table <- read.csv(map_file, header = T, row.names = 1, stringsAsFactors = FALSE)
 sample_id_map <- c()
-if('Description'%in%colnames(mapping_table)){
-  actual_samid <- mapping_table['Description'][,1]
-}else{
-  actual_samid <- rownames(mapping_table)
-}
-
+actual_samid <- mapping_table[, ncol(mapping_table)]
 sample_id_map[rownames(mapping_table)] <- actual_samid
 rownames(mapping_table) <- actual_samid
 
-############ write out input #########
-moveto_dir()
-cpd_table_out <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
-write.table(
-  data.frame(compounds = cpd_table_out[, 1], cpd_table_out[df_map(cpd_table_out, is.numeric)]),
-  "compounds.tsv", sep = "\t", row.names=FALSE
-)
-write.table(
-  data.frame(SampleID=rownames(mapping_table), mapping_table[!colnames(mapping_table)%in%c("order")]),
-  "mapping_file.tsv", sep = "\t", row.names=FALSE
-)
 
 
 write("#####################Color Assignment", stdout())
-if(is.null(colors)){
-  pallet <- unique(c(c("#20B2AA", "#DC143C", "#FF9933"), rev(brewer.pal(12,"Paired")),brewer.pal(8,"Set2")[-c(7,8)],brewer.pal(8,"Dark2"),brewer.pal(12,"Set3"),brewer.pal(8,"Accent"),brewer.pal(11,"Spectral")))
-}else{
-  pallet <- str_split(colors, ",")[[1]]
-}
-
-group_df <- mapping_table[categories]
-group_df$id <- rownames(group_df)
-group_df <- na.omit(melt(group_df, id.vars=c("id")))
-# print(group_df)
+pallet <- unique(c(c("#20B2AA", "#DC143C", "#FF9933"), rev(brewer.pal(12,"Paired")),brewer.pal(8,"Set2")[-c(7,8)],brewer.pal(8,"Dark2"),brewer.pal(12,"Set3"),brewer.pal(8,"Accent"),brewer.pal(11,"Spectral")))
+group_df <- na.omit(melt(mapping_table[categories]))
 all_groups <- unique(group_df[,ncol(group_df)])
 all_groups <- sort(all_groups)
 group_colors <- pallet[1:length(all_groups)]
 names(group_colors) <- all_groups
-pre_ordered_samples <- rownames(mapping_table)[order(mapping_table["order"][, 1])]
+ordered_samples <- rownames(mapping_table)[order(mapping_table["order"][, 1])]
 
-# print(group_colors)
 
 yield_combine <- function(vec){
   vec <- sort(vec)
@@ -229,12 +184,9 @@ data_factory <- function(category="Category", cpd_label = "name", type = "pair",
       ele_is_paired <- length(ele_groups)==2
       ele_cmpType <- cmpType[i]
       ele_data <- base_df[base_df[,2]%in%ele_groups, ]
-      # ï¿½ï¿½È¥ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½NAï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½
+      # ³ýÈ¥ËùÓÐÖµ¶¼ÊÇNAµÄ»¯ºÏÎï
       ele_data <- ele_data[, c(T,T,colSums(!is.na(ele_data[,-c(1,2)]))>0)]
-      ele_data <- ele_data[, c(T,T,colSums(!ele_data[,-c(1,2)]==0)>0)]
       ele_colors <- group_colors[ele_groups]
-      # print(ele_groups)
-      # print(ele_colors)
       out_list[[i]] <- list(data=ele_data, name=ele_name, groups=ele_groups, colors=ele_colors, cmpType=ele_cmpType, paired=ele_is_paired)
     }
     return(out_list)
@@ -267,11 +219,11 @@ for(category in categories){
   # category <- "Category"
   write("#####################Data Prepare", stdout())
   moveto_dir(paste(category, "/00-DataProcess/", sep = "/"))
-
+  
   # map
   cpd_table <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
   cpd_table <- map_table_header(cpd_table=cpd_table)
-  if(input_type=="untarget_keggid_name"){
+  if(input_type=="untarget"){
     # if(run_qc){
     #   dir.create("./01-QA_QC")
     #   metadata <- read.csv(metadata_file, row.names = 1, check.names = FALSE, stringsAsFactors = FALSE)
@@ -300,26 +252,24 @@ for(category in categories){
     cpd_df<-cpd_df[, -c(2,3)]
     write.csv(cpd_df, "compound_cross_reference_after_QC.csv", row.names = F)
     fix_columns <- c(1:9)
-  }else if(input_type=="target_name"){
-    # cpd_df <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
-    cpd_df <- cpd_table
-    # colnames(cpd_df)[1:2]<-c("name", "class")
-    # fix_columns <- c(1:2)
-    colnames(cpd_df)[1]<-c("name")
-    fix_columns <- c(1)
   }else{
-    # untarget_name
-    id_type <- str_split(input_type, "_", n=2)[[1]][2]
-    cpd_names <- cpd_table[, 1]
-    ref_df <- cross_reference(cpd_names, type=id_type)
-    cpd_df <- data.frame(choose(id_type=="name",cpd_names, ref_df[1]), ref_df, cpd_table[, -c(1)], check.names=FALSE)
-    cpd_df <- cpd_df[!is.na(cpd_df[, 1]), ]
-    colnames(cpd_df)[1] <- "name"
-    cpd_df<-cpd_df[, -c(2,3)]
-    write.csv(cpd_df, "compound_cross_reference_after_QC.csv", row.names = F)
-    fix_columns <- c(1:9)
+    if(input_type=="target"){
+      # cpd_df <- read.csv(cpd_file, check.names = FALSE, header = T, stringsAsFactors = FALSE)
+      cpd_df <- cpd_table
+      # colnames(cpd_df)[1:2]<-c("name", "class")
+      # fix_columns <- c(1:2)
+      colnames(cpd_df)[1]<-c("name")
+      fix_columns <- c(1)
+    }else{
+      cpd_names <- cpd_table[, 1]
+      ref_df <- cross_reference(cpd_names, type="name")
+      cpd_df <- data.frame(cpd_names, ref_df, cpd_table[, -c(1)], check.names=FALSE)
+      colnames(cpd_df)[1] <- "name"
+      cpd_df<-cpd_df[, -c(2,3)]
+      write.csv(cpd_df, "compound_cross_reference_after_QC.csv", row.names = F)
+      fix_columns <- c(1:9)
+    }
   }
-
   rownames(cpd_df) <- cpd_df[, 1]
   write("#####################QC plot", stdout())
   moveto_dir(paste(category, "/00-DataProcess/01-QA_QC", sep = "/"))
@@ -348,11 +298,9 @@ for(category in categories){
   write("#####################QA plot", stdout())
   data <- data_factory(category = category, type = "all", fix_columns=fix_columns)
   # print(data)
-  ordered_samples <- pre_ordered_samples[pre_ordered_samples%in%data[,1]]
   elipse_pca(table = data, file_pc1 = "AllSample_PC1.pdf", file_biplot = NA, sam_order = ordered_samples)
   datas <- data_factory(category = category, type = "single", fix_columns=fix_columns)
   for (data in datas) {
-      # print(data$data)
       elipse_pca(table = data$data, colors = data$colors, file_biplot = paste(data$name, "_PCA_QA.pdf", sep = ""), file_pc1 = NA, label = T)
       elipse_pca(table = data$data, colors = data$colors, file_biplot = paste(data$name, "_PCA_QA_without_ids.pdf", sep = ""), file_pc1 = NA, label = F)
   }
@@ -386,7 +334,6 @@ for(category in categories){
     abundance_barplot(data$data, colors = data$colors, by_group_mean = TRUE, prefix = "group_mean_")   
 
     moveto_dir(paste(category, "01-ConcentrationSummary/2-Heatmap", data$name, sep = "/"))
-    # print(data$data)
     abundance_heatmap(data$data, colors = data$colors, by_group_mean = FALSE, cluster = FALSE)   
     abundance_heatmap(data$data, colors = data$colors, by_group_mean = FALSE, cluster = TRUE, prefix = "clustered_")   
     abundance_heatmap(data$data, colors = data$colors, by_group_mean = TRUE,  cluster = FALSE, prefix = "group_mean_")  
@@ -407,8 +354,7 @@ for(category in categories){
     moveto_dir(paste(category, "05-UnivariateAnalysis", data$name, sep = "/"))
     if(data$paired){
       print("Paired data, plot valcano")
-      # Volcano(data$data, colors = data$colors, cmpType = data$cmpType)
-      Volcano(data$data, cmpType = data$cmpType) # colors is not needed for volcano
+      Volcano(data$data, colors = data$colors, cmpType = data$cmpType)
       sig_features <- sig_boxplot(table = data$data, colors = data$colors)
       # print(sig_features)
       if(length(sig_features)>0){
@@ -448,7 +394,7 @@ for(category in categories){
   #   system("rm *.log")
   # }
   
-  if(!input_type=="target_name"){
+  if(!input_type=="target"){
     datas <- data_factory(category = category, cpd_label = "kegg_id", fix_columns=fix_columns)
     for(data in datas){
       write("#####################PathwayTopoEnrichment Analysis ", stdout())
@@ -481,7 +427,7 @@ for(category in categories){
       }, error=function(e){print(e)})
     }
   }
-  show_label <- !exp_flow=="lc_ms"
+  show_label <- !input_type=="untarget"
   datas <- data_factory(category = category, type = "single", fix_columns=fix_columns)
   for (data in datas) {
     # data <- datas[[4]]
@@ -496,13 +442,11 @@ for(category in categories){
   group_cor_heatmap(data, prefix = "all_group_", show_names = show_label)
   # group_cor_heatmap(data, cluster = TRUE, prefix = "all_group_clustered_", show_names = show_label)
   moveto_dir(category)
-  if(report){
-    system(sprintf("cp -rp %s/FiguresTablesForReport ./", base_dir))
-    system("mv FiguresTablesForReport/ç»“é¢˜æŠ¥å‘Š.html ./")
-    system(sprintf("bash %s/prepare_report_images.sh %s", base_dir, report_group))
-    system(sprintf("render_report.py ç»“é¢˜æŠ¥å‘Š.html %s %s", input_type, exp_flow))
-  }
+  system(sprintf("cp -rp %s/FiguresTablesForReport ./", base_dir))
+  system("mv FiguresTablesForReport/ç»“é¢˜æŠ¥å‘Š.html ./")
+  # system(sprintf("cp 09-PathwayTopoEnrichment/%s/%s_dpi300.pdf FiguresTablesForReport/å›?9-3.pdf", report_group, str_replace_all(REPORT_PATHWAY, " +", "_")))
+  system(sprintf("bash %s/prepare_report_images.sh %s", base_dir, report_group))
+  system(sprintf("render_report.py ç»“é¢˜æŠ¥å‘Š.html %s", input_type))
+  
 }
 
-print("metabonome_pipline.R program is finished.")
-print(Sys.time())
